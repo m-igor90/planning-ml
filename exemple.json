@@ -3,7 +3,7 @@
   "units": [
    {
     "id": "NEO",
-    "nom": "Médecine néonatale",
+    "nom": "Néo",
     "besoins": {
      "inf": {
       "J": 2,
@@ -17,7 +17,7 @@
    },
    {
     "id": "KAN",
-    "nom": "Unité kangourou",
+    "nom": "Kang",
     "besoins": {
      "inf": {
       "J": 1,
@@ -78,8 +78,8 @@
     "soldeDebut": "2027-01"
    },
    {
-    "id": "Ma1",
-    "prenom": "Ma1",
+    "id": "Mar",
+    "prenom": "Mar",
     "nom": "",
     "qualif": "PDE",
     "unite": "NEO",
@@ -117,8 +117,8 @@
     "soldeDebut": "2027-01"
    },
    {
-    "id": "Ma2",
-    "prenom": "Ma2",
+    "id": "Mae",
+    "prenom": "Mae",
     "nom": "",
     "qualif": "PDE",
     "unite": "NEO",
@@ -128,8 +128,8 @@
     "soldeDebut": "2027-01"
    },
    {
-    "id": "Em2",
-    "prenom": "Em2",
+    "id": "Eme",
+    "prenom": "Eme",
     "nom": "",
     "qualif": "PDE",
     "unite": "NEO",
@@ -183,8 +183,8 @@
     "soldeDebut": "2027-01"
    },
    {
-    "id": "Em1",
-    "prenom": "Em1",
+    "id": "Emi",
+    "prenom": "Emi",
     "nom": "",
     "qualif": "IDE",
     "unite": "NEO",
@@ -200,8 +200,8 @@
     "soldeDebut": "2027-01"
    },
    {
-    "id": "An1",
-    "prenom": "An1",
+    "id": "Ann",
+    "prenom": "Ann",
     "nom": "",
     "qualif": "IDE",
     "unite": "NEO",
@@ -232,8 +232,8 @@
     "soldeDebut": "2027-01"
    },
    {
-    "id": "An2",
-    "prenom": "An2",
+    "id": "Ank",
+    "prenom": "Ank",
     "nom": "",
     "qualif": "PDE",
     "unite": "KAN",
@@ -247,8 +247,8 @@
     "soldeDebut": "2027-01"
    },
    {
-    "id": "El1",
-    "prenom": "El1",
+    "id": "Elo",
+    "prenom": "Elo",
     "nom": "",
     "qualif": "PDE",
     "unite": "KAN",
@@ -262,8 +262,8 @@
     "soldeDebut": "2027-01"
    },
    {
-    "id": "Ma3",
-    "prenom": "Ma3",
+    "id": "Mat",
+    "prenom": "Mat",
     "nom": "",
     "qualif": "PDE",
     "unite": "KAN",
@@ -338,8 +338,8 @@
     "soldeDebut": "2027-01"
    },
    {
-    "id": "El2",
-    "prenom": "El2",
+    "id": "Ely",
+    "prenom": "Ely",
     "nom": "",
     "qualif": "AP",
     "unite": "KAN",
@@ -421,7 +421,7 @@
     "Sa": {
      "29": "RsA"
     },
-    "Ma1": {
+    "Mar": {
      "4": "CA",
      "5": "CA",
      "6": "CA",
@@ -433,8 +433,8 @@
     "Do": {
      "4": "CA"
     },
-    "Ma2": {},
-    "Em2": {},
+    "Mae": {},
+    "Eme": {},
     "Al": {
      "15": "RsA",
      "29": "RsA"
@@ -446,8 +446,8 @@
     "Na": {
      "27": "RsA"
     },
-    "Em1": {},
-    "An1": {
+    "Emi": {},
+    "Ann": {
      "6": "RsA",
      "14": "RsA",
      "19": "RsA",
@@ -474,8 +474,8 @@
      "28": "N",
      "29": "RPV"
     },
-    "An2": {},
-    "El1": {
+    "Ank": {},
+    "Elo": {
      "22": "RsA",
      "25": "CA",
      "26": "CA",
@@ -483,7 +483,7 @@
      "28": "CA",
      "29": "CA"
     },
-    "Ma3": {
+    "Mat": {
      "11": "CA",
      "12": "CA",
      "13": "CA",
@@ -519,7 +519,7 @@
      "26": "CA",
      "27": "CA"
     },
-    "El2": {
+    "Ely": {
      "4": "RPV",
      "6": "N",
      "7": "N",
@@ -554,26 +554,26 @@
     "Mo": 120.0,
     "Ro": 126.0,
     "Sa": 140.0,
-    "Ma1": 140.0,
+    "Mar": 140.0,
     "Ca": 140.0,
     "Do": 140.0,
-    "Ma2": 140.0,
-    "Em2": 140.0,
+    "Mae": 140.0,
+    "Eme": 140.0,
     "Al": 140.0,
     "Le": 112.0,
     "Na": 112.0,
-    "Em1": 84.0,
-    "An1": 84.0,
+    "Emi": 84.0,
+    "Ann": 84.0,
     "So": 130.0,
-    "An2": 140.0,
-    "El1": 112.0,
-    "Ma3": 140.0,
+    "Ank": 140.0,
+    "Elo": 112.0,
+    "Mat": 140.0,
     "Is": 140.0,
     "Au": 112.0,
     "Ta": 140.0,
     "Ju": 112.0,
     "Ga": 112.0,
-    "El2": 112.0,
+    "Ely": 112.0,
     "La": 140.0,
     "As": 112.0,
     "Ci": 112.0,

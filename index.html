@@ -270,7 +270,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <span class="eyebrow">Démo · V1.1.0 · Médecine néonatale &amp; unité kangourou</span>
+      <span class="eyebrow">Démo · V1.1.1 · Néo &amp; Kang</span>
       <h1>Planning du service</h1>
     </div>
     <div class="month">
@@ -319,7 +319,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <dialog class="wdlg" id="dlg" aria-labelledby="dlgTitle"></dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="planner.js?v=ml-1.1.0"></script>
+<script src="planner.js?v=ml-1.1.1"></script>
 <script>
 (function () {
   'use strict';
@@ -362,8 +362,27 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     state.prevPlan = (o.plans && o.plans[shiftKey(key(), -1)]) || null;
     state.undo = []; render();
   }
+  /* Anonymisation (V1.1.1) : renomme les prénoms en double et les unités dans les données déjà enregistrées */
+  var RENOMS = { Ma1: 'Mar', Ma2: 'Mae', Ma3: 'Mat', Em1: 'Emi', Em2: 'Eme', An1: 'Ann', An2: 'Ank', El1: 'Elo', El2: 'Ely' };
+  var UNITES = { 'Médecine néonatale': 'Néo', 'Unité kangourou': 'Kang' };
+  function migrer(o) {
+    if (!o.team) return o;
+    var ids = {}, map = {}, ch = false;
+    (o.team.staff || []).forEach(function (s) { ids[s.id] = 1; });
+    Object.keys(RENOMS).forEach(function (a) { if (ids[a] && !ids[RENOMS[a]]) map[a] = RENOMS[a]; });
+    (o.team.staff || []).forEach(function (s) { var b = map[s.id]; if (!b) return; if (s.prenom === s.id) s.prenom = b; s.id = b; ch = true; });
+    (o.team.units || []).forEach(function (u) { if (UNITES[u.nom]) { u.nom = UNITES[u.nom]; ch = true; } });
+    Object.keys(o.plans || {}).forEach(function (k) {
+      ['cells', 'theo', 'adjust'].forEach(function (f) {
+        var c = (o.plans[k] || {})[f]; if (!c) return;
+        Object.keys(map).forEach(function (a) { if (a in c) { c[map[a]] = c[a]; delete c[a]; ch = true; } });
+      });
+    });
+    if (ch) lsWrite(o);
+    return o;
+  }
   function boot() {
-    var o = lsRead();
+    var o = migrer(lsRead());
     function start(team, plans, y, m) {
       state.team = team; state.y = y; state.m = m;
       if (plans) { var all = lsRead(); all.team = team; all.plans = plans; lsWrite(all); }

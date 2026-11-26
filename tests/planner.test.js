@@ -17,9 +17,9 @@ test('janvier de l’exemple : tous les postes couverts, demandes et trames fixe
   const res = P.generate({ ...base, cells: plan.cells, carry, seed: 1 });
   const e = P.evaluate({ ...base, cells: res.cells, carry });
   assert.strictEqual(e.missing, 0);
-  const rules = e.issues.filter(i => i.sid && i.lvl === 'err' && !['So', 'El2'].includes(i.sid));
+  const rules = e.issues.filter(i => i.sid && i.lvl === 'err' && !['So', 'Ely'].includes(i.sid));
   assert.deepStrictEqual(rules, [], 'seules les trames fixes peuvent rester en alerte');
-  for (const id of ['So', 'El2']) assert.deepStrictEqual(res.cells[id], plan.cells[id]);
+  for (const id of ['So', 'Ely']) assert.deepStrictEqual(res.cells[id], plan.cells[id]);
   for (const [id, row] of Object.entries(plan.cells)) for (const d of Object.keys(row)) assert.strictEqual(res.cells[id][d], row[d], id + ' le ' + d);
   // repos de veille après chaque dernière nuit
   for (const [id, row] of Object.entries(res.cells)) for (let d = 1; d < 31; d++) if (P.parseCell(row[d]).c === 'N' && P.parseCell(row[d + 1]).c !== 'N') assert.ok(!P.isWork(P.parseCell(row[d + 1]).c), id + ' ' + d);

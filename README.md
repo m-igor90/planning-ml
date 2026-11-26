@@ -1,7 +1,7 @@
 # Planning du service
 
 Application web de démonstration pour planifier le mois d'un service de soins à postes de 12 h :
-médecine néonatale et unité kangourou (IDE/PDE et AP), avec renforts entre unités.
+deux unités, Néo et Kang (IDE/PDE et AP), avec renforts entre unités.
 Une seule page (`index.html`) et le moteur (`planner.js`), sans installation ni serveur.
 
 En ligne : https://m-igor90.github.io/planning-ml/
@@ -35,11 +35,11 @@ partagées entre appareils : utiliser l'export JSON pour changer d'appareil.
 | FC | Formation | 7 h |
 | RsA, Rtp, RH, RC, RPV, JF | Repos | 0 |
 
-`J@KAN` : jour en renfort dans l'unité kangourou (affiché « J » avec l'initiale de l'unité).
+`J@KAN` : jour en renfort dans l'unité Kang (affiché « J » avec l'initiale de l'unité).
 
 ## Règles appliquées par le générateur
 
-- Couverture par unité, fonction et poste (réglable) : néonatale 2 IDE/PDE de jour et de nuit ; kangourou 1 IDE/PDE
+- Couverture par unité, fonction et poste (réglable) : Néo 2 IDE/PDE de jour et de nuit ; Kang 1 IDE/PDE
   et 1 AP de jour et de nuit. Le renfort d'une personne polyvalente est préféré aux heures supplémentaires.
 - Repos de veille après une nuit, puis un repos (2 jours au total, réglable par personne) ; 12 h entre deux postes ;
   au plus 2 nuits, 3 postes de 12 h et 5 jours de travail d'affilée (réglables).

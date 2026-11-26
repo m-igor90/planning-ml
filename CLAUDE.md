@@ -14,11 +14,11 @@ Tout en français : interface, code, commentaires, messages de commit.
 - `exemple.json` : janvier 2027 tiré des documents du service, chargé au premier lancement.
 - `tests/planner.test.js` : `node --test tests/` (5 tests).
 - Clé localStorage `planning-ml-v1` (distincte de `planning-test`, même origine GitHub Pages).
-- Version affichée dans l'en-tête (`Démo · V1.1.0`) et `?v=ml-1.1.0` sur `planner.js` : les augmenter ensemble.
+- Version affichée dans l'en-tête (`Démo · V1.1.1`) et `?v=ml-1.1.1` sur `planner.js` : les augmenter ensemble.
 
 ## Service modélisé
 
-- Deux unités : médecine néonatale (`NEO`) et unité kangourou (`KAN`). Fonctions : IDE/PDE (groupe `inf`) et AP
+- Deux unités, nommées « Néo » (`NEO`) et « Kang » (`KAN`) pour l'anonymat. Fonctions : IDE/PDE (groupe `inf`) et AP
   (groupe `ap`) ; cadre hors planning.
 - Besoins par jour, réglables : NEO 2 IDE/PDE de jour et de nuit ; KAN 1 IDE/PDE et 1 AP de jour et de nuit.
 - Codes : J (7h-19h, 12 h), N (19h-7h, valeur 12h50), B (journée de 7 h en semaine, équivalent B100, au prorata),
@@ -35,8 +35,11 @@ Tout en français : interface, code, commentaires, messages de commit.
 ## Données et confidentialité
 
 - Les documents d'origine (Word et Excel du service) ne sont pas dans le dépôt et ne doivent pas y être ajoutés.
-- Prénoms réduits aux 2 premières lettres, numérotés en cas de doublon (Ma1, Ma2, Ma3, Em1, Em2, An1, An2, El1,
-  El2) ; aucun matricule ; cadre exclue.
+- Prénoms réduits aux 2 premières lettres ; en cas de doublon, 3 lettres choisies pour rester reconnaissables par la
+  cadre (Mar, Mae, Mat, Emi, Eme, Ann, Ank, Elo, Ely). Aucun prénom complet, nom ni matricule dans le dépôt ; cadre exclue.
+- Unités : seulement « Néo » et « Kang » dans l'interface et la documentation, jamais le nom complet du service.
+- Anciens identifiants (Ma1…El2, V1.1.0) : `migrer()` dans `index.html` renomme les données déjà enregistrées dans le
+  navigateur (personnes dans `cells`, `theo`, `adjust` ; noms d'unités).
 
 ## Résultat de référence (janvier 2027)
 
@@ -46,11 +49,11 @@ Généré : 0 poste non couvert, 2 alertes (trames fixes à plus de 48 h sur 7 j
 
 ## Questions en attente pour la responsable
 
-1. Quelle est la 4e équipe ? Y a-t-il des AP en néonatale, combien par poste ?
+1. Quelle est la 4e équipe ? Y a-t-il des AP en Néo, combien par poste ?
 2. 48 h sur 7 jours : nuit comptée 12 h effectives ou 12h50 ?
 3. B100 « jour potentiel travaillable » : journée de 7 h réellement travaillée (quels horaires) ou réserve ?
-4. « Garder une marge de 65 h sup » (Em2) : garder 65 h au compteur ou ne pas dépasser 65 h ? (codé : solde visé 65)
-5. Alternance des week-ends (An2, Is) déduite de janvier : à confirmer.
+4. « Garder une marge de 65 h sup » (Eme) : garder 65 h au compteur ou ne pas dépasser 65 h ? (codé : solde visé 65)
+5. Alternance des week-ends (Ank, Is) déduite de janvier : à confirmer.
 6. « R » gris au-dessus de Lo du 1er au 3 janvier : signification ?
 7. Postes de 7 h de la légende (6h25, 13h, 20h45) utilisés ? Faut-il distinguer RH et RC ?
 8. Renforts vers les autres services (USC, SAU, maternité, grands enfants) à gérer ?
