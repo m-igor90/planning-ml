@@ -8,13 +8,16 @@ Tout en français : interface, code, commentaires, messages de commit.
 ## Organisation
 
 - `index.html` : page unique (styles, interface). Pas de dépendance ni d'étape de build.
+  Sous la grille, panneau « Indicateurs » (`renderKpi`, `statsMois`, `suiviMois`) : couverture, heures, cumul TTE,
+  vacataire, renforts, absences, équité nuits/week-ends, suivi des mois planifiés. Saisie par glisser (`paintRange`),
+  largeur des jours ajustée à l'écran (`ajusterLargeur`).
 - `planner.js` : moteur (`window.Planner` / `module.exports`) : `generate`, `evaluate`, `candidates`
   (« Qui peut venir ? »), `theoretical`, `holidaysDefault` (France). Construction gloutonne puis recuit simulé,
   environ 1 s pour un mois.
 - `exemple.json` : janvier 2027 tiré des documents du service, chargé au premier lancement.
 - `tests/planner.test.js` : `node --test tests/*.test.js` (5 tests).
 - Clé localStorage `planning-ml-v1` (distincte de `planning-test`, même origine GitHub Pages).
-- Version affichée dans l'en-tête (`Démo · V1.2.1`) et `?v=ml-1.2.1` sur `planner.js` : les augmenter ensemble.
+- Version affichée dans l'en-tête (`Démo · V1.3.0`) et `?v=ml-1.3.0` sur `planner.js` : les augmenter ensemble.
 
 ## Service modélisé
 

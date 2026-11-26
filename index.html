@@ -165,6 +165,29 @@ table.grid { border-collapse: separate; border-spacing: 0; font-variant-numeric:
 .muted { color: var(--muted); }
 .note { font-size: 12.5px; color: var(--muted); max-width: 70ch; }
 
+/* Indicateurs */
+.kpi-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 8px; }
+.tile { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; align-content: start; min-width: 0; }
+.tile .k { font-size: 12px; color: var(--muted); font-weight: 600; }
+.tile .v { font-family: var(--f-display); font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile .s { font-size: 12px; color: var(--muted); }
+.tile .st { font-size: 12px; font-weight: 600; }
+.tile .st.ok { color: var(--ok); } .tile .st.err { color: var(--err); } .tile .st.warn { color: var(--warn); }
+.kpi-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+.kpi-cols h4 { margin: 0 0 6px; font-size: 14px; }
+.ktable { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.ktable th, .ktable td { padding: 4px 6px; border-bottom: 1px solid var(--line-soft); text-align: right; white-space: nowrap; }
+.ktable th:first-child, .ktable td:first-child { text-align: left; }
+.ktable thead th { color: var(--muted); font-weight: 600; font-size: 11.5px; }
+.ktable tr.cur td { font-weight: 700; background: var(--accent-soft); }
+.ktable button.lnk { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.ktable .neg { color: var(--err); } .ktable .pos { color: var(--ok); }
+.kscroll { overflow-x: auto; }
+#kpi > *, .kpi-cols > * { min-width: 0; }
+.range { position: relative; height: 8px; border-radius: 4px; background: var(--line-soft); min-width: 80px; }
+.range i { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--accent); opacity: .55; }
+.range b { position: absolute; top: -3px; width: 3px; height: 14px; border-radius: 2px; background: var(--ink); }
 /* Équipe & règles */
 .settings { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .chk { display: flex; align-items: center; gap: 6px; font-size: 13px; }
@@ -274,7 +297,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 @media print {
   @page { size: A4 landscape; margin: 8mm; }
   body { background: #fff; font-size: 10px; }
-  .toolbar, .palette, #settings, #exportPanel, .cols, .status, .month .iconbtn, #confirmZone, .toast { display: none !important; }
+  .toolbar, .palette, #settings, #exportPanel, .cols, #kpi, .status, .month .iconbtn, #confirmZone, .toast { display: none !important; }
   .gridwrap { overflow: visible; border: 0; }
   .grid td.c { width: 22px; min-width: 22px; height: 22px; } .cell { height: 22px; } .code { font-size: 10px; min-width: 0; padding: 1px; }
 }
@@ -282,7 +305,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <span class="eyebrow">Démo · V1.2.1 · Néo &amp; Kang</span>
+      <span class="eyebrow">Démo · V1.3.0 · Néo &amp; Kang</span>
       <h1>Planning du service</h1>
     </div>
     <div class="month">
@@ -306,6 +329,8 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   <div class="summary" id="summary"></div>
   <div class="palette" id="palette"></div>
   <div class="gridwrap" id="gridwrap"><div class="empty">Chargement du planning…</div></div>
+
+  <section class="panel" id="kpi" aria-labelledby="kpiTitle"></section>
 
   <section class="panel" id="exportPanel" hidden>
     <h3>Export CSV</h3>
@@ -331,7 +356,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <dialog class="wdlg" id="dlg" aria-labelledby="dlgTitle"></dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="planner.js?v=ml-1.2.1"></script>
+<script src="planner.js?v=ml-1.3.0"></script>
 <script>
 (function () {
   'use strict';
@@ -430,8 +455,9 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     memo[k] = { sig: sig, v: v }; return v;
   }
   /* Cumul au 1er du mois : solde de départ + soldes des mois précédents planifiés + corrections. */
-  function carryIn(s) {
-    var plans = lsRead().plans || {}, start = s.soldeDebut || null, acc = +s.soldeInitial || 0, k = key();
+  function carryIn(s) { return carryAt(s, key()); }
+  function carryAt(s, k) {
+    var plans = lsRead().plans || {}, start = s.soldeDebut || null, acc = +s.soldeInitial || 0;
     if (start && k < start) return 0;
     for (var m = start || k; m < k; m = shiftKey(m, 1)) { var pp = plans[m]; if (!pp) continue; acc += (monthBalance(m, pp)[s.id] || 0) + (+((pp.adjust || {})[s.id]) || 0); }
     return acc;
@@ -534,7 +560,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     $('undoBtn').disabled = !state.undo.length;
     var o = lsRead(); o.last = key(); lsWrite(o);
     var ev = P.evaluate(baseOpts({ carry: carries() }));
-    renderSummary(ev); renderPalette(); renderGrid(ev); renderIssues(ev); renderLegend(); renderSettings();
+    renderSummary(ev); renderPalette(); renderGrid(ev); renderKpi(ev); renderIssues(ev); renderLegend(); renderSettings();
   }
   function renderSummary(ev) {
     var rules = ev.issues.filter(function (i) { return i.sid && i.lvl === 'err'; }).length, prefs = ev.issues.filter(function (i) { return i.sid && i.lvl === 'warn'; }).length;
@@ -638,6 +664,100 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     t.style.setProperty('--cw', Math.max(CW_MIN, Math.min(34, cw)) + 'px');
   }
   var tAjust; window.addEventListener('resize', function () { clearTimeout(tAjust); tAjust = setTimeout(ajusterLargeur, 120); });
+  /* ---------- indicateurs ---------- */
+  function nb(x, d) { return (Math.round(x * Math.pow(10, d || 0)) / Math.pow(10, d || 0)).toLocaleString('fr-FR'); }
+  /* Chiffres d'un mois : couverture, heures, vacataire, renforts, absences, équité. */
+  function statsMois(ev, cells) {
+    var o = { need: 0, have: 0, missing: ev.missing, excess: ev.excess, parUnite: {}, hVac: 0, pVac: 0, renf: {}, nRenf: 0, abs: { CA: 0, FC: 0, RsA: 0 },
+      hrs: 0, theo: 0, nights: [], we: [], cumul: [], alertes: 0, prefs: 0 };
+    ev.cover.forEach(function (day) {
+      Object.keys(day).forEach(function (k) {
+        var c = day[k], p = k.split('|'), kk = p[0] + '|' + p[2], u = o.parUnite[kk] || (o.parUnite[kk] = { U: p[0], P: p[2], need: 0, have: 0 });
+        o.need += c.need; o.have += Math.min(c.have, c.need); u.need += c.need; u.have += Math.min(c.have, c.need);
+      });
+    });
+    ev.issues.forEach(function (i) { if (i.sid && i.lvl === 'err') o.alertes++; else if (i.sid && i.lvl === 'warn') o.prefs++; });
+    ev.people.forEach(function (p) {
+      var s = person(p.id); if (!s) return;
+      var row = cells[s.id] || {};
+      Object.keys(row).forEach(function (d) {
+        var pc = P.parseCell(row[d]);
+        if (o.abs[pc.c] !== undefined) o.abs[pc.c]++;
+        if (P.isWork(pc.c) && pc.u && pc.u !== s.unite) { var k = s.unite + '→' + pc.u; o.renf[k] = (o.renf[k] || 0) + 1; o.nRenf++; }
+      });
+      if (s.vacataire) { o.hVac += p.hours; o.pVac += p.nights + p.jours; return; }
+      o.hrs += p.hours; o.theo += p.theo;
+      // Équité : les agents de nuit et les trames fixes ne choisissent pas leurs nuits, on les laisse de côté
+      if (!s.agentNuit && !s.trameFixe && s.nuits !== 'non') o.nights.push({ v: p.nights, s: s, t: +s.taux || 100 });
+      if (!s.trameFixe) o.we.push({ v: p.we, s: s });
+    });
+    return o;
+  }
+  function etendue(list, unite) {
+    if (!list.length) return '<span class="s">—</span>';
+    var vals = list.map(function (x) { return x.v; }), mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+    var moy = vals.reduce(function (a, b) { return a + b; }, 0) / vals.length, top = Math.max(mx, 1);
+    var qui = function (v) { return list.filter(function (x) { return x.v === v; }).map(function (x) { return dname(x.s); }).join(', '); };
+    return '<td title="' + esc('Moins : ' + qui(mn) + ' · Plus : ' + qui(mx)) + '">' + nb(mn) + ' – ' + nb(mx) + '</td><td>' + nb(moy, 1) + '</td>' +
+      '<td style="width:40%"><div class="range" role="img" aria-label="' + esc('De ' + mn + ' à ' + mx + ' ' + unite + ', moyenne ' + nb(moy, 1)) + '"><i style="left:' + (mn / top * 100) + '%;right:' + (100 - mx / top * 100) + '%"></i><b style="left:calc(' + (moy / top * 100) + '% - 1px)"></b></div></td>';
+  }
+  function renderKpi(ev) {
+    var z = $('kpi'); if (!staff().length) { z.hidden = true; return; } z.hidden = false;
+    var st = statsMois(ev, state.plan.cells), planned = ev.people.some(function (p) { return p.hours > 0; });
+    var nom = MONTHS[state.m - 1] + ' ' + state.y;
+    // cumul d'heures en fin de mois (hors vacataire)
+    var cum = staff().filter(function (s) { return !s.vacataire && P.groupOf(s) !== 'cadre'; }).map(function (s) {
+      var p = ev.people.filter(function (x) { return x.id === s.id; })[0];
+      return { s: s, v: carryIn(s) + (p ? p.balance : 0) + (+((state.plan.adjust || {})[s.id]) || 0) };
+    });
+    var cumTot = cum.reduce(function (a, x) { return a + x.v; }, 0), cumMax = cum.slice().sort(function (a, b) { return b.v - a.v; })[0], cumMin = cum.slice().sort(function (a, b) { return a.v - b.v; })[0];
+    var tx = st.need ? st.have / st.need * 100 : 100;
+    var tile = function (k, v, sub, title, cls, stx) { return '<div class="tile"' + (title ? ' title="' + esc(title) + '"' : '') + '><span class="k">' + k + '</span><span class="v">' + v + '</span>' + (stx ? '<span class="st ' + cls + '">' + stx + '</span>' : '') + (sub ? '<span class="s">' + sub + '</span>' : '') + '</div>'; };
+    var renfTxt = Object.keys(st.renf).map(function (k) { var p = k.split('→'); return esc(unitName(p[0])) + ' → ' + esc(unitName(p[1])) + ' : ' + st.renf[k]; }).join(' · ');
+    var h = '<div class="kpi-head"><h3 id="kpiTitle">Indicateurs · ' + esc(nom) + '</h3><span class="note">Calculés sur le planning affiché. Sur ordinateur, survolez un chiffre pour le détail.</span></div>';
+    h += '<div class="tiles">';
+    h += tile('Couverture des postes', nb(tx, tx > 99.5 && tx < 100 ? 1 : 0) + ' %', st.have + ' / ' + st.need + ' postes de 12 h', 'Postes de jour et de nuit pourvus, par rapport aux besoins réglés dans « Équipe & règles »', st.missing ? 'err' : 'ok', st.missing ? '✕ ' + st.missing + ' non couvert(s)' : '✓ tout est couvert');
+    h += tile('Heures planifiées', planned ? nb(st.hrs) + ' h' : '—', 'théorique ' + nb(st.theo) + ' h · solde ' + fmtH(st.hrs - st.theo), 'Total de l’équipe hors vacataire : heures du mois et temps théorique');
+    h += tile('Cumul d’heures fin de mois', fmtH(cumTot), cumMax ? 'de ' + fmtH(cumMin.v) + ' (' + esc(dname(cumMin.s)) + ') à ' + fmtH(cumMax.v) + ' (' + esc(dname(cumMax.s)) + ')' : '', 'Somme des cumuls TTE de l’équipe (hors vacataire) à la fin du mois : heures supplémentaires à récupérer');
+    h += tile('Vacataire', nb(st.hVac) + ' h', st.pVac + ' poste(s) de 12 h', 'Recours à la vacataire, à limiter : coût élevé', st.pVac ? 'warn' : 'ok', st.pVac ? '' : '✓ pas de recours');
+    h += tile('Renforts entre unités', String(st.nRenf), renfTxt || 'aucun', 'Postes tenus par une personne hors de son unité');
+    h += tile('Absences', nb(st.abs.CA) + ' j de CA', 'formation ' + st.abs.FC + ' j · repos souhaités ' + st.abs.RsA, 'Jours posés dans le mois');
+    h += tile('Contrôles', String(st.alertes), st.prefs + ' préférence(s) non respectée(s)', 'Alertes réglementaires sur les lignes des personnes', st.alertes ? 'err' : 'ok', st.alertes ? '✕ alerte(s) réglementaire(s)' : '✓ règles respectées');
+    if (st.excess) h += tile('Sureffectif', String(st.excess), 'poste(s) au-delà du besoin', 'Postes où l’effectif dépasse le besoin : à réaffecter ou à transformer en repos', 'warn', '');
+    h += '</div><div class="kpi-cols">';
+    // couverture par unité
+    h += '<div><h4>Couverture par unité</h4><div class="kscroll"><table class="ktable"><thead><tr><th>Unité</th><th>Poste</th><th>Pourvus</th><th>Manquants</th></tr></thead><tbody>';
+    units().forEach(function (u) { ['J', 'N'].forEach(function (Pc) { var c = st.parUnite[u.id + '|' + Pc]; if (!c || !c.need) return;
+      h += '<tr><td>' + esc(u.nom) + '</td><td>' + (Pc === 'J' ? 'Jour' : 'Nuit') + '</td><td>' + c.have + ' / ' + c.need + '</td><td class="' + (c.need - c.have ? 'neg' : '') + '">' + (c.need - c.have || '—') + '</td></tr>'; }); });
+    h += '</tbody></table></div></div>';
+    // équité
+    h += '<div><h4>Équité entre les personnes</h4><div class="kscroll"><table class="ktable"><thead><tr><th>Ce mois</th><th>Écart</th><th>Moyenne</th><th aria-label="Répartition"></th></tr></thead><tbody>';
+    h += '<tr><td title="Hors agents de nuit, trames fixes et personnes sans nuit">Nuits par personne</td>' + etendue(st.nights, 'nuits') + '</tr>';
+    h += '<tr><td title="Hors trames fixes">Week-ends travaillés</td>' + etendue(st.we, 'week-ends') + '</tr>';
+    h += '<tr><td title="Cumul TTE en fin de mois, hors vacataire">Cumul d’heures</td>' + etendue(cum.map(function (x) { return { v: Math.round(x.v), s: x.s }; }), 'heures') + '</tr>';
+    h += '</tbody></table></div><p class="note">Barre : de la valeur la plus basse à la plus haute ; trait noir : moyenne. Sur ordinateur, survolez l’écart pour voir les personnes concernées.</p></div>';
+    h += '</div>' + suiviMois();
+    z.innerHTML = h;
+  }
+  /* Suivi sur plusieurs mois : un ligne par mois planifié (12 derniers au plus). */
+  function suiviMois() {
+    var all = lsRead().plans || {}, ks = Object.keys(all).filter(function (k) { return Object.keys((all[k] || {}).cells || {}).some(function (sid) { return Object.keys(all[k].cells[sid]).length; }); }).sort().slice(-12);
+    if (ks.length < 1) return '';
+    var rows = ks.map(function (k) {
+      var pl = all[k], pk = shiftKey(k, -1), pp = all[pk], y = +k.slice(0, 4), m = +k.slice(5, 7);
+      var prev = pp && pp.cells ? { year: +pk.slice(0, 4), month: +pk.slice(5, 7), holidays: pp.holidays || [], cells: pp.cells } : null;
+      var ev = P.evaluate({ staff: staff(), units: units(), rules: state.team.rules, year: y, month: m, plan: pl, holidays: pl.holidays, cells: pl.cells, prev: prev });
+      var st = statsMois(ev, pl.cells), next = shiftKey(k, 1);
+      var cum = staff().filter(function (s) { return !s.vacataire && P.groupOf(s) !== 'cadre'; }).reduce(function (a, s) { return a + carryAt(s, next); }, 0);
+      return { k: k, st: st, cum: cum };
+    });
+    var h = '<div><h4>Suivi des mois planifiés</h4><div class="kscroll"><table class="ktable"><thead><tr><th>Mois</th><th>Non couverts</th><th>Alertes</th><th>Vacataire</th><th>Renforts</th><th>Solde du mois</th><th>Cumul fin de mois</th></tr></thead><tbody>';
+    rows.forEach(function (r) {
+      var sol = r.st.hrs - r.st.theo;
+      h += '<tr' + (r.k === key() ? ' class="cur"' : '') + '><td><button class="lnk" data-goto="' + r.k + '">' + esc(MONTHS[+r.k.slice(5, 7) - 1] + ' ' + r.k.slice(0, 4)) + '</button></td><td class="' + (r.st.missing ? 'neg' : '') + '">' + r.st.missing + '</td><td>' + r.st.alertes + '</td><td>' + nb(r.st.hVac) + ' h</td><td>' + r.st.nRenf + '</td><td class="' + (sol < -0.01 ? 'neg' : sol > 0.01 ? 'pos' : '') + '">' + fmtH(sol) + '</td><td>' + fmtH(r.cum) + '</td></tr>';
+    });
+    return h + '</tbody></table></div><p class="note">Touchez un mois pour l’afficher. Le cumul suit le solde de départ de chaque personne (fiche « Équipe & règles »).</p></div>';
+  }
   function renderIssues(ev) {
     var list = ev.issues.slice(0, 200);
     $('issues').innerHTML = list.length ? list.map(function (i) {
@@ -832,6 +952,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   $('settingsBtn').onclick = function () { state.settingsOpen = !state.settingsOpen; renderSettings(); if (state.settingsOpen) $('settings').scrollIntoView({ block: 'start', behavior: 'smooth' }); };
   $('prev').onclick = function () { state.m--; if (state.m < 1) { state.m = 12; state.y--; } loadMonth(); };
   $('next').onclick = function () { state.m++; if (state.m > 12) { state.m = 1; state.y++; } loadMonth(); };
+  $('kpi').addEventListener('click', function (e) { var b = e.target.closest('[data-goto]'); if (!b) return; state.y = +b.dataset.goto.slice(0, 4); state.m = +b.dataset.goto.slice(5, 7); loadMonth(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
   $('settings').addEventListener('change', onSettingsChange);
   $('settings').addEventListener('click', onSettingsClick);
   boot();
