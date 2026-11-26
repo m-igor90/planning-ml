@@ -68,6 +68,12 @@ button { cursor: pointer; }
 .status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
 .status.busy .dot { background: var(--warn); }
 .status.off .dot { background: var(--muted); }
+.status { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 600px) { .status { justify-content: flex-start; } }
+.status .save { border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 3px 9px; font-size: 12px; font-weight: 600; color: var(--accent); }
+.status .save:hover { border-color: var(--accent); }
+.status.warn #saveInfo { color: var(--warn); font-weight: 600; }
+.status.warn .dot { background: var(--warn); }
 
 /* Barre d'outils */
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -348,7 +354,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <span class="eyebrow">Démo · V1.5.0 · Néo &amp; Kang</span>
+      <span class="eyebrow">Démo · V1.5.1 · Néo &amp; Kang</span>
       <h1>Planning du service</h1>
     </div>
     <div class="month">
@@ -356,7 +362,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
       <h2 id="monthTitle">…</h2>
       <button class="iconbtn" id="next" aria-label="Mois suivant">›</button>
     </div>
-    <div class="status off" id="status"><span class="dot"></span><span id="statusTxt">Chargement…</span></div>
+    <div class="status off" id="status"><span class="dot"></span><span id="statusTxt">Chargement…</span><span id="saveInfo"></span><button class="save" id="saveBtn" type="button" title="Télécharger une copie de toutes les données (équipe, règles, tous les mois) : à garder en lieu sûr, à réimporter si le navigateur est effacé">Sauvegarder</button></div>
   </header>
 
   <div class="toolbar" id="toolbar">
@@ -400,7 +406,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <dialog class="wdlg" id="dlg" aria-labelledby="dlgTitle"></dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="planner.js?v=ml-1.5.0"></script>
+<script src="planner.js?v=ml-1.5.1"></script>
 <script>
 (function () {
   'use strict';
@@ -440,7 +446,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   /* Lecture seule des mois enregistrés, décodée une fois puis gardée jusqu'à la prochaine écriture (cumuls, indicateurs). */
   var lsGen = 0, lsPlans = null;
   function plansLus() { if (!lsPlans) lsPlans = lsRead().plans || {}; return lsPlans; }
-  function save() { var o = lsRead(); o.team = state.team; o.plans = o.plans || {}; if (state.plan) o.plans[key()] = state.plan; lsWrite(o); }
+  function save() { var o = lsRead(); o.modifDepuis = o.modifDepuis || new Date().toISOString(); o.team = state.team; o.plans = o.plans || {}; if (state.plan) o.plans[key()] = state.plan; lsWrite(o); }
   function defaultPlan() { return { year: state.y, month: state.m, holidays: P.holidaysDefault(state.y, state.m), cells: {} }; }
   function loadMonth() {
     var o = lsRead();
@@ -476,7 +482,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     function start(team, plans, y, m) {
       state.team = team; state.y = y; state.m = m;
       if (plans) lsWrite({ team: team, plans: plans });
-      $('status').className = 'status'; $('statusTxt').textContent = 'Enregistré dans ce navigateur';
+      $('statusTxt').textContent = 'Enregistré dans ce navigateur';
       loadMonth();
     }
     if (o.team && (o.team.staff || []).length) { var k = o.last || Object.keys(o.plans || {}).sort().pop(); var now = new Date(); start(o.team, null, k ? +k.slice(0, 4) : now.getFullYear(), k ? +k.slice(5, 7) : now.getMonth() + 1); return; }
@@ -612,7 +618,23 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     $('undoBtn').disabled = !state.undo.length;
     var o = lsRead(); if (o.last !== key()) { o.last = key(); lsWrite(o); }
     var ev = P.evaluate(baseOpts({ carry: carries() }));
-    renderSummary(ev); renderPalette(); renderGrid(ev); renderKpi(ev); renderIssues(ev); renderLegend(); renderSettings();
+    renderStatus(); renderSummary(ev); renderPalette(); renderGrid(ev); renderKpi(ev); renderIssues(ev); renderLegend(); renderSettings();
+  }
+  /* Rappel de sauvegarde : les données ne vivent que dans ce navigateur ; un fichier les met à l'abri. */
+  function renderStatus() {
+    var o = lsRead(), depuis = function (iso) { return Math.floor((Date.now() - new Date(iso)) / 86400000); };
+    var quand = function (j) { return j <= 0 ? 'aujourd’hui' : j === 1 ? 'hier' : 'il y a ' + j + ' jours'; };
+    var mod = o.modifDepuis ? depuis(o.modifDepuis) : null;
+    // Rappel (orange) seulement si des modifications attendent une sauvegarde depuis une semaine ou plus
+    $('status').className = 'status' + (mod !== null && mod >= 7 ? ' warn' : '');
+    $('saveInfo').textContent = mod !== null ? '· modifications non sauvegardées' + (mod >= 1 ? ' depuis ' + mod + ' jour' + (mod > 1 ? 's' : '') : '') + (o.sauvegarde ? ' (fichier : ' + quand(depuis(o.sauvegarde)) + ')' : '')
+      : o.sauvegarde ? '· fichier sauvegardé ' + quand(depuis(o.sauvegarde)) : '';
+  }
+  function sauvegarder() {
+    var o = lsRead(), d = new Date(), j = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    o.sauvegarde = d.toISOString(); delete o.modifDepuis; lsWrite(o);
+    try { var blob = new Blob([JSON.stringify(o, null, 1)], { type: 'application/json' }), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'planning-neo-kang-' + j + '.json'; document.body.appendChild(a); a.click(); a.remove(); } catch (e) { }
+    renderStatus(); toast('Sauvegarde téléchargée : gardez le fichier en lieu sûr (« Importer une sauvegarde » pour la retrouver)', 6000);
   }
   function renderSummary(ev) {
     var rules = ev.issues.filter(function (i) { return i.sid && i.lvl === 'err'; }).length, prefs = ev.issues.filter(function (i) { return i.sid && i.lvl === 'warn'; }).length;
@@ -960,7 +982,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   }
   function onSettingsClick(e) {
     var t = e.target.closest('button'); if (!t) return;
-    if (t.id === 'exportJson') { var blob = new Blob([JSON.stringify(lsRead(), null, 1)], { type: 'application/json' }), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'planning-service.json'; document.body.appendChild(a); a.click(); a.remove(); return; }
+    if (t.id === 'exportJson') { sauvegarder(); return; }
     if (t.id === 'resetEx') { fetch('exemple.json').then(function (r) { return r.json(); }).then(function (ex) { lsWrite({ team: ex.team, plans: ex.plans }); state.team = ex.team; state.y = 2027; state.m = 1; loadMonth(); toast('Exemple rechargé'); }); return; }
     if (t.id === 'addStaff') { var np = { id: 'p' + Date.now().toString(36), prenom: '', nom: '', qualif: 'PDE', unite: (units()[0] || {}).id, taux: 100, polyvalence: [] }; staff().push(np); state.open[np.id] = true; save(); render(); var f = $('f-' + np.id + '-prenom'); if (f) f.focus(); return; }
     if (t.dataset.hol) { pushUndo(); state.plan.holidays = toggleIn(state.plan.holidays, +t.dataset.hol).sort(function (a, b) { return a - b; }); save(); render(); return; }
@@ -1049,6 +1071,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     if ($('dlg').open || !state.undo.length) return;
     e.preventDefault(); undo(); toast('Modification annulée');
   });
+  $('saveBtn').onclick = sauvegarder;
   $('genBtn').onclick = generate; $('undoBtn').onclick = undo; $('clearBtn').onclick = clearGenerated;
   $('printBtn').onclick = function () { window.print(); };
   $('exportBtn').onclick = exportCsv;

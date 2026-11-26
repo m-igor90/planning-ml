@@ -17,7 +17,7 @@ Tout en français : interface, code, commentaires, messages de commit.
 - `exemple.json` : janvier 2027 tiré des documents du service, chargé au premier lancement.
 - `tests/planner.test.js` : `node --test tests/*.test.js` (6 tests). `node tests/bench.js` : mesure du moteur sur 3 mois.
 - Clé localStorage `planning-ml-v1` (distincte de `planning-test`, même origine GitHub Pages).
-- Version affichée dans l'en-tête (`Démo · V1.5.0`) et `?v=ml-1.5.0` sur `planner.js` : les augmenter ensemble.
+- Version affichée dans l'en-tête (`Démo · V1.5.1`) et `?v=ml-1.5.1` sur `planner.js` : les augmenter ensemble.
 
 ## Service modélisé
 
@@ -51,9 +51,9 @@ Tout en français : interface, code, commentaires, messages de commit.
 Prévisionnel du service : 14 postes non couverts, 41 alertes, écart moyen à la cible 39 h.
 Généré : 0 poste non couvert, 2 alertes (trames fixes à plus de 48 h sur 7 jours avec la nuit à 12h50),
 écart moyen 21 h.
-Enchaînement janvier → mars (`node tests/bench.js`, 6 graines, V1.5.0) : février et mars 0 poste
+Enchaînement janvier → mars (`node tests/bench.js`, 6 graines, V1.5.1) : février et mars 0 poste
 non couvert, écart moyen à la cible 4,9 h et 2,4 h, dispersion des cumuls 19 h puis 16 h, vacataire 2 à 6 h par mois.
-Avant V1.5.0 : So et Ely (trames fixes de nuit) restaient à 0 h dès février, d'où nuits non couvertes et cumuls qui divergeaient.
+Avant V1.5.1 : So et Ely (trames fixes de nuit) restaient à 0 h dès février, d'où nuits non couvertes et cumuls qui divergeaient.
 
 ## Questions en attente pour la responsable
 
