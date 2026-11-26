@@ -53,3 +53,18 @@ test('temps théorique : 7 h par jour ouvré au prorata, 32h30 pour un agent de 
   assert.strictEqual(P.theoretical({ id: 'x', taux: 80 }, info), 112);
   assert.strictEqual(P.theoretical({ id: 'x', taux: 100, agentNuit: true }, info), 130);
 });
+
+test('agent de nuit : jamais de poste de jour ; trame fixe non saisie générée seulement si demandé', () => {
+  const night = { id: 'n', qualif: 'IDE', unite: 'U', taux: 100, agentNuit: true, trameFixe: true };
+  const day = { id: 'd', qualif: 'IDE', unite: 'U', taux: 100 };
+  const units = [{ id: 'U', nom: 'Unité', besoins: { inf: { J: 1, N: 1 }, ap: { J: 0, N: 0 } } }];
+  const base = { staff: [night, day], units, rules: { iterations: 20000 }, year: 2027, month: 2, holidays: [], cells: {}, seed: 3 };
+  // trame fixe sans case et sans trameAuto : la ligne reste vide
+  assert.deepStrictEqual(P.generate({ ...base, plan: {} }).cells.n, {});
+  // trameAuto : la ligne est générée, uniquement des nuits (et repos de veille)
+  const res = P.generate({ ...base, plan: { trameAuto: { n: true } } });
+  const codes = Object.values(res.cells.n).map(v => P.parseCell(v).c);
+  assert.ok(codes.includes('N'), 'des nuits');
+  assert.ok(codes.every(c => c === 'N' || c === 'RPV'), codes.join(','));
+  assert.ok(P.evaluate({ ...base, plan: {}, staff: [{ ...night, trameFixe: false }], cells: { n: { 3: 'J' } } }).issues.some(i => /Agent de nuit/.test(i.txt)));
+});

@@ -12,6 +12,9 @@
   var WORK = { J: 1, N: 1, B: 1, FC: 1 };
   var GROUPS = { IDE: 'inf', PDE: 'inf', AP: 'ap', CADRE: 'cadre' };
   var GEN = ['', 'J', 'N', 'B', 'RPV', 'RH', 'RC']; // codes que le générateur peut remplacer
+  /* Trame fixe : la ligne n'est jamais modifiée, sauf si la trame n'a pas été saisie pour le mois (plan.trameAuto[id]) :
+     la ligne est alors générée comme les autres, et l'interface demande de la vérifier. */
+  function trameActive(s, plan) { return !!s.trameFixe && !(plan && plan.trameAuto && plan.trameAuto[s.id]); }
   var DEFAULT_RULES = {
     hJour: 12, hNuit: 12 + 50 / 60, hB: 7, max7j: 48, maxSuite12: 3, maxSuite: 5, maxNuitsSuite: 2,
     reposApresNuit: 2, rattrapageMax: 24, iterations: 60000, restarts: 2
@@ -82,7 +85,7 @@
     var units = opts.units || [];
     var people = (opts.staff || []).filter(function (s) { return groupOf(s) !== 'cadre'; }).map(function (s) {
       var src = cells[s.id] || {}, row = [], unit = [], lock = [];
-      for (var d = 1; d <= info.D; d++) { var pc = parseCell(src[d]); row.push(pc.c); unit.push(pc.u); lock.push(!!s.trameFixe || pc.l || GEN.indexOf(pc.c) < 0); }
+      for (var d = 1; d <= info.D; d++) { var pc = parseCell(src[d]); row.push(pc.c); unit.push(pc.u); lock.push(trameActive(s, plan) || pc.l || GEN.indexOf(pc.c) < 0); }
       var theo = theoretical(s, info, plan), cum = +carry[s.id] || 0, aim = +s.soldeVise || 0;
       var catchUp = Math.max(-R.rattrapageMax, Math.min(R.rattrapageMax, cum - aim));
       var pre = prevTail(s, opts.prev);
@@ -150,6 +153,7 @@
       if (code === 'N') nights++;
       if (!wk) continue;
       if (code === 'N' && s.nuits === 'non' && !a.lock[di]) issue('err', i, 'Pas de nuit pour cette personne', HARD);
+      if (s.agentNuit && code !== 'N' && code !== 'FC' && !a.lock[di]) issue('err', i, 'Agent de nuit : pas de poste de jour', HARD);
       if (code === 'B' && (d.we || d.hol) && !a.lock[di]) issue('err', i, 'Journée de 7 h hors semaine', HARD);
       if (s.joursAutorises && s.joursAutorises.length && s.joursAutorises.indexOf(d.dow) < 0 && !a.lock[di]) issue('err', i, 'Jour non travaillé par cette personne', HARD);
       var dw = s.desirs && s.desirs[d.dow];
@@ -229,7 +233,7 @@
     var cells = {};
     (opts.staff || []).forEach(function (s) {
       var src = (opts.cells || {})[s.id] || {}, o = {};
-      Object.keys(src).forEach(function (d) { var pc = parseCell(src[d]); if (s.trameFixe || pc.l || GEN.indexOf(pc.c) < 0) o[d] = src[d]; });
+      Object.keys(src).forEach(function (d) { var pc = parseCell(src[d]); if (trameActive(s, opts.plan) || pc.l || GEN.indexOf(pc.c) < 0) o[d] = src[d]; });
       cells[s.id] = o;
     });
     P.forEach(function (a, p) {
@@ -251,9 +255,9 @@
     var pPen = P.map(function (a, p) { return checkRow(st, a, rows[p], units[p]); });
     var dPen = days.map(function (d, i) { return coverPen(st, rows, units, i); });
     function domain(a, i) {
-      var o = ['', 'J', 'N'];
-      if (!days[i].we && !days[i].hol) o.push('B');
-      a.poly.forEach(function (U) { if (st.units.some(function (u) { return u.id === U; })) { o.push('J@' + U); o.push('N@' + U); } });
+      var nuit = !!a.s.agentNuit, o = nuit ? ['', 'N'] : ['', 'J', 'N'];
+      if (!nuit && !days[i].we && !days[i].hol) o.push('B');
+      a.poly.forEach(function (U) { if (st.units.some(function (u) { return u.id === U; })) { if (!nuit) o.push('J@' + U); o.push('N@' + U); } });
       return o;
     }
     function set(p, i, v) { var k = v.indexOf('@'); rows[p][i] = k >= 0 ? v.slice(0, k) : v; units[p][i] = k >= 0 ? v.slice(k + 1) : null; }
@@ -381,7 +385,7 @@
   }
 
   var api = { POSTES: POSTES, DEFAULT_RULES: DEFAULT_RULES, rulesOf: rulesOf, parseCell: parseCell, isWork: isWork, groupOf: groupOf,
-    holidaysDefault: holidaysDefault, monthInfo: monthInfo, theoretical: theoretical, hoursOf: hoursOf,
+    holidaysDefault: holidaysDefault, trameActive: trameActive, monthInfo: monthInfo, theoretical: theoretical, hoursOf: hoursOf,
     generate: generate, evaluate: evaluate, candidates: candidates };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Planner = api;

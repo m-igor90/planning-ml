@@ -15,9 +15,9 @@ Tout en français : interface, code, commentaires, messages de commit.
   (« Qui peut venir ? »), `theoretical`, `holidaysDefault` (France). Construction gloutonne puis recuit simulé,
   environ 1 s pour un mois.
 - `exemple.json` : janvier 2027 tiré des documents du service, chargé au premier lancement.
-- `tests/planner.test.js` : `node --test tests/*.test.js` (5 tests).
+- `tests/planner.test.js` : `node --test tests/*.test.js` (6 tests).
 - Clé localStorage `planning-ml-v1` (distincte de `planning-test`, même origine GitHub Pages).
-- Version affichée dans l'en-tête (`Démo · V1.3.1`) et `?v=ml-1.3.1` sur `planner.js` : les augmenter ensemble.
+- Version affichée dans l'en-tête (`Démo · V1.4.0`) et `?v=ml-1.4.0` sur `planner.js` : les augmenter ensemble.
 
 ## Service modélisé
 
@@ -26,7 +26,9 @@ Tout en français : interface, code, commentaires, messages de commit.
 - Besoins par jour, réglables : NEO 2 IDE/PDE de jour et de nuit ; KAN 1 IDE/PDE et 1 AP de jour et de nuit.
 - Codes : J (7h-19h, 12 h), N (19h-7h, valeur 12h50), B (journée de 7 h en semaine, équivalent B100, au prorata),
   CA (congé, 7 h × taux), FC (formation 7 h), RsA, Rtp, RH, RC, RPV, JF. `J@KAN` = renfort dans une autre unité.
-  Préfixe `!` = case fixée. CA, FC, RsA, Rtp, JF et les lignes « trame fixe » ne sont jamais modifiés.
+  Préfixe `!` = case fixée. CA, FC, RsA, Rtp, JF et les lignes « trame fixe » ne sont jamais modifiés, sauf une trame
+  fixe sans aucune case dans le mois : `plan.trameAuto[id]`, ligne générée et signalée « à vérifier » (bouton « Garder
+  comme trame »). Un agent de nuit ne reçoit que des nuits.
 - Règles (documents « Réglementation planning ») : repos de veille après une nuit puis repos, 12 h entre deux
   postes, 48 h sur 7 jours glissants (heures après minuit sur le lendemain), 36 h de repos par semaine, 4 repos
   sur 2 semaines dont 2 consécutifs avec un dimanche. Renfort entre unités préféré aux heures supplémentaires.
@@ -49,6 +51,9 @@ Tout en français : interface, code, commentaires, messages de commit.
 Prévisionnel du service : 14 postes non couverts, 41 alertes, écart moyen à la cible 39 h.
 Généré : 0 poste non couvert, 2 alertes (trames fixes à plus de 48 h sur 7 jours avec la nuit à 12h50),
 écart moyen 21 h.
+Enchaînement janvier → mars (6 graines, banc `bench.js` décrit dans l'historique, V1.4.0) : février et mars 0 poste
+non couvert, écart moyen à la cible 4,9 h et 2,4 h, dispersion des cumuls 19 h puis 16 h, vacataire 2 à 6 h par mois.
+Avant V1.4.0 : So et Ely (trames fixes de nuit) restaient à 0 h dès février, d'où nuits non couvertes et cumuls qui divergeaient.
 
 ## Questions en attente pour la responsable
 
