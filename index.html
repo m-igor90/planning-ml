@@ -155,7 +155,7 @@ table.grid { border-collapse: separate; border-spacing: 0; font-variant-numeric:
 .note { font-size: 12.5px; color: var(--muted); max-width: 70ch; }
 
 /* Équipe & règles */
-.settings { display: grid; gap: 14px; }
+.settings { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .chk { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 .fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); gap: 10px 12px; align-items: end; }
 .fgrid label:not(.chk) { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); min-width: 0; }
@@ -254,6 +254,7 @@ textarea.csv { width: 100%; min-height: 140px; font-family: ui-monospace, Menlo,
 .days7 button { min-width: 36px; height: 32px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); font-weight: 700; font-size: 12px; }
 .days7 button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .days7.excl button[aria-pressed="true"] { background: var(--err); border-color: var(--err); color: #fff; }
+.needs-wrap { overflow-x: auto; max-width: 100%; }
 .needs { border-collapse: collapse; font-size: 13px; }
 .needs th, .needs td { border: 1px solid var(--line-soft); padding: 4px 8px; text-align: center; }
 .needs input { width: 56px; min-height: 32px; border: 1px solid var(--line); border-radius: 6px; padding: 4px; background: var(--bg); color: var(--ink); text-align: center; }
@@ -575,9 +576,9 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     var h = '<h3>Équipe</h3><p class="note">Touchez une personne pour voir et modifier tous ses réglages.</p><div class="wcards">';
     staff().forEach(function (s) { h += card(s); });
     h += '</div><div><button class="btn" id="addStaff">+ Ajouter une personne</button></div>';
-    h += '<h3>Unités et besoins par poste</h3><table class="needs"><thead><tr><th>Unité</th><th>IDE/PDE jour</th><th>IDE/PDE nuit</th><th>AP jour</th><th>AP nuit</th></tr></thead><tbody>' +
+    h += '<h3>Unités et besoins par poste</h3><div class="needs-wrap"><table class="needs"><thead><tr><th>Unité</th><th>IDE/PDE jour</th><th>IDE/PDE nuit</th><th>AP jour</th><th>AP nuit</th></tr></thead><tbody>' +
       units().map(function (u) { var b = u.besoins || {}; return '<tr><th><input type="text" style="width:170px;text-align:left" data-uname="' + esc(u.id) + '" value="' + esc(u.nom) + '"></th>' + [['inf', 'J'], ['inf', 'N'], ['ap', 'J'], ['ap', 'N']].map(function (x) { return '<td><input type="number" min="0" max="9" data-need="' + esc(u.id) + '|' + x[0] + '|' + x[1] + '" value="' + (+((b[x[0]] || {})[x[1]]) || 0) + '"></td>'; }).join('') + '</tr>'; }).join('') +
-      '</tbody></table><p class="note">Nombre de soignantes demandé chaque jour, week-ends compris. Une personne polyvalente peut renforcer une autre unité ; le renfort est préféré aux heures supplémentaires.</p>';
+      '</tbody></table></div><p class="note">Nombre de soignantes demandé chaque jour, week-ends compris. Une personne polyvalente peut renforcer une autre unité ; le renfort est préféré aux heures supplémentaires.</p>';
     var num = function (id, label, v, step) { return '<label>' + label + '<input type="number" id="' + id + '" step="' + (step || 1) + '" value="' + v + '"></label>'; };
     h += '<h3>Règles</h3><div class="rules">' +
       num('r-hJour', 'Durée d’un jour (h)', R.hJour, 0.25) + num('r-hNuit', 'Valeur d’une nuit (h)', Math.round(R.hNuit * 100) / 100, 0.01) +
