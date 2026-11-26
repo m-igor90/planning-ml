@@ -44,7 +44,7 @@
 [hidden] { display: none !important; }
 body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.45;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 48px; }
-.wrap { max-width: 1500px; margin: 0 auto; display: grid; gap: 14px; }
+.wrap { margin: 0 auto; display: grid; gap: 14px; } /* pleine largeur : le tableau d'un mois fait jusqu'à 1 750 px */
 h1, h2, h3 { font-family: var(--f-display); font-weight: 700; letter-spacing: .01em; margin: 0; text-wrap: balance; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -107,7 +107,15 @@ table.grid { border-collapse: separate; border-spacing: 0; font-variant-numeric:
 .grid .meta { font-size: 11px; color: var(--muted); }
 .grid .group th { text-align: left; font-family: var(--f-display); text-transform: uppercase; letter-spacing: .1em; font-size: 12.5px; color: var(--accent); padding: 8px 8px 4px; background: var(--surface); }
 .grid .group th.col-name { position: sticky; left: 0; }
-.grid td.c { width: 34px; min-width: 34px; height: 34px; }
+.grid td.c { width: var(--cw, 34px); min-width: var(--cw, 34px); height: 34px; }
+/* Écran un peu étroit : jours resserrés (--cw calculé en JS) et colonnes de synthèse plus compactes, pour éviter la barre de défilement. */
+.grid.compact .code { min-width: min(28px, calc(var(--cw, 34px) - 3px)); font-size: 13px; padding: 3px 1px; }
+.grid.compact .code.RPV, .grid.compact .code.RsA, .grid.compact .code.Rtp, .grid.compact .code.RH, .grid.compact .code.RC, .grid.compact .code.JF { font-size: 10px; letter-spacing: -.02em; }
+.grid.compact .cell { padding: 1px; }
+.grid.compact .col-name { min-width: 104px; max-width: 128px; padding: 0 6px; }
+.grid.compact td.sum, .grid.compact th.sum { padding: 0 4px; font-size: 12px; }
+.grid.compact td.sum .theo { display: block; font-size: 10.5px; color: var(--muted); }
+.grid.compact .dn .num { font-size: 14px; }
 .grid .we { background: var(--we); }
 .grid .hol { background: var(--hol); }
 .grid thead .hol .num, .grid thead .hol { color: var(--hol-ink); }
@@ -274,7 +282,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <span class="eyebrow">Démo · V1.2.0 · Néo &amp; Kang</span>
+      <span class="eyebrow">Démo · V1.2.1 · Néo &amp; Kang</span>
       <h1>Planning du service</h1>
     </div>
     <div class="month">
@@ -323,7 +331,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <dialog class="wdlg" id="dlg" aria-labelledby="dlgTitle"></dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="planner.js?v=ml-1.2.0"></script>
+<script src="planner.js?v=ml-1.2.1"></script>
 <script>
 (function () {
   'use strict';
@@ -592,7 +600,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
           ndays.forEach(bordure(next, 'nextd'));
           if (!p) { h += '<td colspan="5"></td></tr>'; return; }
           var adj = +((state.plan.adjust || {})[s.id]) || 0, end = carry[s.id] + p.balance + adj;
-          h += '<td class="sum" title="Cible : ' + esc(fmtA(p.target)) + '">' + fmtA(p.hours) + ' / ' + fmtA(p.theo) + '</td>' +
+          h += '<td class="sum" title="Cible : ' + esc(fmtA(p.target)) + '">' + fmtA(p.hours) + '<span class="theo"> / ' + fmtA(p.theo) + '</span></td>' +
             '<td class="sum"><span class="' + (p.balance < -0.01 ? 'neg' : p.balance > 0.01 ? 'pos' : '') + '">' + fmtH(p.balance) + '</span></td>' +
             '<td class="sum big" title="' + esc('Cumul au 1er : ' + fmtH(carry[s.id]) + ' · mois : ' + fmtH(p.balance) + (adj ? ' · correction : ' + fmtH(adj) : '')) + '">' + fmtH(end) + '</td>' +
             '<td class="sum">' + p.nights + '</td><td class="sum">' + p.we + '</td></tr>';
@@ -613,7 +621,23 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     var cad = staff().filter(function (s) { return P.groupOf(s) === 'cadre'; });
     if (!staff().length) { $('gridwrap').innerHTML = '<div class="empty">Aucune personne : ajoutez l’équipe dans « Équipe & règles ».</div>'; return; }
     $('gridwrap').innerHTML = h + '</tbody></table>' + (cad.length ? '<p class="note" style="padding:6px 10px">Cadre hors planning : ' + cad.map(dname).map(esc).join(', ') + '</p>' : '');
+    ajusterLargeur();
   }
+  /* Largeur des jours : 34 px si la place le permet, sinon resserrée (jusqu'à 23 px) pour tenir dans l'écran sans
+     barre de défilement. Sur téléphone et tablette en portrait, le tableau garde sa taille et défile. */
+  var CW_MIN = 23;
+  function ajusterLargeur() {
+    var g = $('gridwrap'), t = g.querySelector('table.grid'); if (!t) return;
+    t.classList.remove('compact'); t.style.removeProperty('--cw');
+    var dispo = g.clientWidth; if (t.offsetWidth <= dispo || window.innerWidth < 1000) return;
+    var cases = t.querySelectorAll('tbody tr:not(.group):not(.cov)')[0]; if (!cases) return;
+    var nj = cases.querySelectorAll('td.c').length; if (!nj) return;
+    t.classList.add('compact'); t.style.setProperty('--cw', CW_MIN + 'px');
+    var col = cases.querySelector('td.c').offsetWidth, fixe = t.offsetWidth - nj * col;
+    var cw = Math.floor((dispo - fixe) / nj) - (col - CW_MIN);
+    t.style.setProperty('--cw', Math.max(CW_MIN, Math.min(34, cw)) + 'px');
+  }
+  var tAjust; window.addEventListener('resize', function () { clearTimeout(tAjust); tAjust = setTimeout(ajusterLargeur, 120); });
   function renderIssues(ev) {
     var list = ev.issues.slice(0, 200);
     $('issues').innerHTML = list.length ? list.map(function (i) {
