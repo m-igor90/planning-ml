@@ -113,6 +113,9 @@ table.grid { border-collapse: separate; border-spacing: 0; font-variant-numeric:
 .grid thead .hol .num, .grid thead .hol { color: var(--hol-ink); }
 .cell { width: 100%; height: 34px; border: 0; background: transparent; padding: 2px; display: grid; place-items: center; position: relative; }
 .cell:disabled { cursor: default; }
+.cell { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.cell.sel { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.grid.dragging { cursor: ew-resize; }
 .code { font-family: var(--f-display); font-weight: 700; font-size: 14px; line-height: 1; border-radius: 4px; padding: 3px 3px; min-width: 28px; display: inline-block; }
 .code.C1 { color: var(--c1); background: var(--c1-bg); box-shadow: inset 0 0 0 1.5px var(--c1); }
 .code.M1 { color: var(--m1); background: var(--m1-bg); box-shadow: inset 0 0 0 1.5px var(--m1); }
@@ -164,10 +167,11 @@ table.grid { border-collapse: separate; border-spacing: 0; font-variant-numeric:
 .wmatrix button.rest-btn { color: var(--surface); font-family: var(--f-display); }
 .wmatrix button.rest-btn[aria-pressed="true"] { background: var(--err); border-color: var(--err); }
 .wmatrix button:disabled { color: var(--muted); opacity: .5; }
-.grid th.prevd, .grid td.prevd { opacity: .45; }
-.grid td.prevd .code { font-size: 12px; min-width: 0; padding: 2px; }
-.grid th.prevd { font-size: 10px; }
+.grid th.prevd, .grid td.prevd, .grid th.nextd, .grid td.nextd { opacity: .45; }
+.grid td.prevd .code, .grid td.nextd .code { font-size: 11px; min-width: 22px; padding: 2px 3px; }
+.grid th.prevd, .grid th.nextd { font-size: 10px; }
 .grid td.prevd.lastp, .grid th.prevd.lastp { border-right: 2px solid var(--line); }
+.grid td.nextd.firstn, .grid th.nextd.firstn { border-left: 2px solid var(--line); }
 .rules { display: flex; flex-wrap: wrap; gap: 12px; }
 .rules label { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); width: min(100%, 230px); }
 .hol-days { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -270,7 +274,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <span class="eyebrow">Démo · V1.1.3 · Néo &amp; Kang</span>
+      <span class="eyebrow">Démo · V1.2.0 · Néo &amp; Kang</span>
       <h1>Planning du service</h1>
     </div>
     <div class="month">
@@ -319,7 +323,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <dialog class="wdlg" id="dlg" aria-labelledby="dlgTitle"></dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="planner.js?v=ml-1.1.3"></script>
+<script src="planner.js?v=ml-1.2.0"></script>
 <script>
 (function () {
   'use strict';
@@ -363,6 +367,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     state.plan = (o.plans && o.plans[key()]) || defaultPlan();
     state.plan.cells = state.plan.cells || {};
     state.prevPlan = (o.plans && o.plans[shiftKey(key(), -1)]) || null;
+    state.nextPlan = (o.plans && o.plans[shiftKey(key(), 1)]) || null;
     state.undo = []; render();
   }
   /* Anonymisation (V1.1.1) : renomme les prénoms en double et les unités dans les données déjà enregistrées */
@@ -433,15 +438,31 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   /* ---------- actions ---------- */
   function pushUndo() { state.undo.push(clone(state.plan)); if (state.undo.length > 40) state.undo.shift(); }
   function undo() { if (!state.undo.length) return; state.plan = state.undo.pop(); save(); render(); }
-  function paint(sid, d) {
-    var row = state.plan.cells[sid] || (state.plan.cells[sid] = {}), cur = row[d], b = state.brush, s = person(sid);
+  /* Codes posés sur des jours ouvrés seulement quand on glisse sur plusieurs jours (congé d'une semaine,
+     formation) : un samedi, un dimanche ou un férié pris dans la plage reste tel quel. */
+  var OUVRES = { CA: 1, FC: 1, B: 1 };
+  function paint(sid, d) { paintRange(sid, d, d); }
+  function paintRange(sid, d1, d2) {
+    var a = Math.min(+d1, +d2), z = Math.max(+d1, +d2), b = state.brush, s = person(sid);
+    var row = state.plan.cells[sid] || (state.plan.cells[sid] = {}), days = [];
+    var info = P.monthInfo(state.y, state.m, state.plan.holidays);
+    for (var d = a; d <= z; d++) { var di = info.days[d - 1]; if (a < z && OUVRES[b] && (di.we || di.hol)) continue; days.push(d); }
+    if (!days.length) return;
     if (s && s.trameFixe && b !== 'erase') { toast('Trame fixe : modifiez-la dans la fiche (« Trame fixe ») si besoin'); }
-    pushUndo();
-    var pc = P.parseCell(cur);
-    if (b === 'erase') delete row[d];
-    else if (b === 'pin') { if (!pc.c) { state.undo.pop(); return; } row[d] = pc.l ? cur.slice(1) : '!' + cur; }
-    else { var v = '!' + b; if (cur === v) delete row[d]; else row[d] = v; }
+    if (b === 'pin') {
+      var avec = days.filter(function (d) { return P.parseCell(row[d]).c; }); if (!avec.length) return;
+      var fixer = avec.some(function (d) { return !P.parseCell(row[d]).l; });
+      pushUndo();
+      avec.forEach(function (d) { var cur = row[d], l = P.parseCell(cur).l; if (fixer && !l) row[d] = '!' + cur; else if (!fixer && l) row[d] = cur.slice(1); });
+    } else if (b === 'erase') {
+      pushUndo(); days.forEach(function (d) { delete row[d]; });
+    } else {
+      // Toutes les cases ont déjà ce code : on l'enlève (comme un second clic sur une case) ; sinon on le pose partout.
+      var v = '!' + b, deja = days.every(function (d) { return row[d] === v; });
+      pushUndo(); days.forEach(function (d) { if (deja) delete row[d]; else row[d] = v; });
+    }
     save(); render();
+    if (days.length > 1) toast(days.length + ' jours modifiés (« Annuler » pour revenir en arrière)');
   }
   function generate() {
     if (!staff().length) { toast('Aucune personne dans l’équipe : ajoutez-la dans « Équipe & règles » ou rechargez l’exemple', 8000); return; }
@@ -531,19 +552,25 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
         h += '<button class="brush" data-brush="' + b + '" aria-pressed="' + (state.brush === b) + '" title="' + esc(title) + '">' + inner + '</button>';
       });
     });
-    $('palette').innerHTML = h + '<span class="hint">Touchez une case pour y poser le code choisi.</span>';
+    $('palette').innerHTML = h + '<span class="hint">Touchez une case pour y poser le code choisi. Plusieurs jours : glissez de la première à la dernière case (au doigt, appui long puis glisser).</span>';
   }
   function renderGrid(ev) {
-    var info = ev.info, prev = prevForEngine(), pinfo = prev && P.monthInfo(prev.year, prev.month, prev.holidays), pdays = pinfo ? pinfo.days.slice(-3) : [];
+    var info = ev.info;
+    // 3 jours avant et 3 jours après le mois, affichés grisés et en lecture seule (même si ces mois ne sont pas planifiés)
+    var bord = function (k, plan) { var y = +k.slice(0, 4), m = +k.slice(5, 7); return { cells: (plan && plan.cells) || {}, info: P.monthInfo(y, m, plan && plan.holidays ? plan.holidays : P.holidaysDefault(y, m)) }; };
+    var prev = bord(shiftKey(key(), -1), state.prevPlan), next = bord(shiftKey(key(), 1), state.nextPlan);
+    var pdays = prev.info.days.slice(-3), ndays = next.info.days.slice(0, 3);
+    var bcls = function (d, i, n, k) { return k + (k === 'prevd' ? (i === n - 1 ? ' lastp' : '') : (i === 0 ? ' firstn' : '')) + (d.hol ? ' hol' : d.we ? ' we' : ''); };
     var people = {}; ev.people.forEach(function (p) { people[p.id] = p; });
     var err = {}; ev.issues.forEach(function (i) { if (i.sid) err[i.sid + ':' + i.d] = i.lvl; });
     var carry = {}; staff().forEach(function (s) { carry[s.id] = carryIn(s); });
     var cls = function (d) { return (d.hol ? ' hol' : d.we ? ' we' : ''); };
     var h = '<table class="grid"><thead><tr class="dn"><th class="col-name">Personne · taux</th>';
-    pdays.forEach(function (d) { h += '<th class="prevd' + cls(d) + '" title="Fin du mois précédent">' + DOW2[d.dow] + '<span class="num">' + d.d + '</span></th>'; });
+    pdays.forEach(function (d, i) { h += '<th class="' + bcls(d, i, 3, 'prevd') + '" title="Fin du mois précédent (' + MONTHS[prev.info.m - 1] + ')">' + DOW2[d.dow] + '<span class="num">' + d.d + '</span></th>'; });
     info.days.forEach(function (d) { h += '<th class="' + cls(d).trim() + '">' + DOW2[d.dow] + '<span class="num">' + d.d + '</span></th>'; });
+    ndays.forEach(function (d, i) { h += '<th class="' + bcls(d, i, 3, 'nextd') + '" title="Début du mois suivant (' + MONTHS[next.info.m - 1] + ')">' + DOW2[d.dow] + '<span class="num">' + d.d + '</span></th>'; });
     h += '<th class="sum" title="Heures planifiées / temps théorique du mois">Heures</th><th class="sum" title="Heures du mois − temps théorique">Mois</th><th class="sum" title="Cumul au 1er + mois + correction">Cumul</th><th class="sum">Nuits</th><th class="sum" title="Week-ends travaillés">WE</th></tr></thead><tbody>';
-    var cols = info.D + 6 + pdays.length;
+    var cols = info.D + 6 + pdays.length + ndays.length;
     units().forEach(function (u) {
       GROUPS.forEach(function (G) {
         var list = staff().filter(function (s) { return s.unite === u.id && P.groupOf(s) === G[0]; });
@@ -554,13 +581,15 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
           var p = people[s.id], src = state.plan.cells[s.id] || {};
           var meta = esc(s.qualif) + ' ' + esc(s.taux) + ' %' + (s.agentNuit ? ' · nuit' : '') + (s.vacataire ? ' · vacataire' : '') + (s.trameFixe ? ' · trame fixe' : '');
           h += '<tr><th class="col-name" title="' + esc(s.note || '') + '"><span class="name">' + esc(dname(s)) + '</span><span class="meta">' + meta + '</span></th>';
-          pdays.forEach(function (d) { var pc = P.parseCell(((prev.cells || {})[s.id] || {})[d.d]); h += '<td class="c prevd' + cls(d) + '" aria-hidden="true">' + codeHtml(pc.c, pc.u, s.unite) + '</td>'; });
+          var bordure = function (b, k) { return function (d, i) { var pc = P.parseCell((b.cells[s.id] || {})[d.d]); h += '<td class="c ' + bcls(d, i, 3, k) + '" aria-hidden="true">' + codeHtml(pc.c, pc.u, s.unite) + '</td>'; }; };
+          pdays.forEach(bordure(prev, 'prevd'));
           info.days.forEach(function (d) {
             var pc = P.parseCell(src[d.d]), flag = err[s.id + ':' + d.d];
             var c = 'cell' + (pc.l || s.trameFixe ? ' locked' : '') + (flag === 'err' ? ' flag' : flag === 'warn' ? ' flag-warn' : '');
             var label = dname(s) + ', ' + d.d + ' : ' + (pc.c ? (CODES[pc.c] || pc.c) + (pc.u && pc.u !== s.unite ? ' en renfort ' + unitName(pc.u) : '') : 'repos');
             h += '<td class="c' + cls(d) + '"><button class="' + c + '" data-sid="' + esc(s.id) + '" data-d="' + d.d + '" aria-label="' + esc(label) + '" title="' + esc(label) + '">' + (pc.c ? codeHtml(pc.c, pc.u, s.unite) : '<span class="rest">·</span>') + '</button></td>';
           });
+          ndays.forEach(bordure(next, 'nextd'));
           if (!p) { h += '<td colspan="5"></td></tr>'; return; }
           var adj = +((state.plan.adjust || {})[s.id]) || 0, end = carry[s.id] + p.balance + adj;
           h += '<td class="sum" title="Cible : ' + esc(fmtA(p.target)) + '">' + fmtA(p.hours) + ' / ' + fmtA(p.theo) + '</td>' +
@@ -571,11 +600,12 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
         ['J', 'N'].forEach(function (Pc, k) {
           var n = +need[Pc] || 0; if (!n) return;
           h += '<tr class="cov' + (k === 0 ? ' first' : '') + '"><th class="col-name"><span class="meta">Couverture</span> ' + codeHtml(Pc) + '</th>';
-          pdays.forEach(function () { h += '<td class="prevd"></td>'; });
+          pdays.forEach(function (d, i) { h += '<td class="' + bcls(d, i, 3, 'prevd') + '"></td>'; });
           info.days.forEach(function (d, i) {
             var c = ev.cover[i][u.id + '|' + G[0] + '|' + Pc] || { have: 0, need: n }, kk = c.have < c.need ? 'miss' : c.have > c.need ? 'dup' : 'okm';
             h += '<td class="' + cls(d).trim() + '"><button class="' + kk + '" data-cov="' + d.d + '|' + Pc + '|' + u.id + '|' + G[0] + '" title="' + (Pc === 'J' ? 'Jour' : 'Nuit') + ' ' + d.d + ' : ' + c.have + ' / ' + c.need + ' — toucher pour voir qui peut venir">' + c.have + '/' + c.need + '</button></td>';
           });
+          ndays.forEach(function (d, i) { h += '<td class="' + bcls(d, i, 3, 'nextd') + '"></td>'; });
           h += '<td colspan="5"></td></tr>';
         });
       });
@@ -727,8 +757,48 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   /* ---------- événements ---------- */
   $('gridwrap').addEventListener('click', function (e) {
     var cv = e.target.closest('[data-cov]'); if (cv) { var p = cv.dataset.cov.split('|'); openCandidates(+p[0], p[1], p[2], p[3]); return; }
-    var b = e.target.closest('.cell'); if (b) paint(b.dataset.sid, b.dataset.d);
+    var b = e.target.closest('.cell'); if (!b) return;
+    if (Date.now() - drag.fin < 600) return; // déjà traité au relâchement du pointeur
+    paint(b.dataset.sid, b.dataset.d); // clavier (Entrée, Espace)
   });
+
+  /* Plusieurs jours d'un coup : souris = appuyer sur la première case, glisser jusqu'au dernier jour, relâcher.
+     Doigt = appui long (0,4 s) sur la première case, puis glisser ; un geste rapide fait défiler le tableau. */
+  var drag = { on: false, actif: false, fin: 0 };
+  function caseSous(x, y) { var el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('#gridwrap .cell') : null; }
+  function marquer() {
+    var g = $('gridwrap'), a = Math.min(drag.d0, drag.d1), z = Math.max(drag.d0, drag.d1);
+    Array.prototype.forEach.call(g.querySelectorAll('.cell.sel'), function (c) { c.classList.remove('sel'); });
+    if (!drag.actif) return;
+    Array.prototype.forEach.call(g.querySelectorAll('.cell'), function (c) { if (c.dataset.sid === drag.sid && +c.dataset.d >= a && +c.dataset.d <= z) c.classList.add('sel'); });
+  }
+  function finDrag() { clearTimeout(drag.t); var g = $('gridwrap').querySelector('.grid'); if (g) g.classList.remove('dragging'); drag.on = false; drag.actif = false; marquer(); }
+  $('gridwrap').addEventListener('pointerdown', function (e) {
+    var b = e.target.closest('.cell'); if (!b || e.button > 0) return;
+    drag = { on: true, actif: e.pointerType !== 'touch', sid: b.dataset.sid, d0: +b.dataset.d, d1: +b.dataset.d, x: e.clientX, y: e.clientY, id: e.pointerId, fin: drag.fin, touch: e.pointerType === 'touch' };
+    if (drag.touch) drag.t = setTimeout(function () {
+      if (!drag.on) return; drag.actif = true; marquer();
+      if (navigator.vibrate) try { navigator.vibrate(15); } catch (x) { }
+    }, 400);
+    else { e.preventDefault(); marquer(); }
+  });
+  document.addEventListener('pointermove', function (e) {
+    if (!drag.on || e.pointerId !== drag.id) return;
+    if (!drag.actif) { if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 10) { clearTimeout(drag.t); drag.on = false; } return; }
+    var c = caseSous(e.clientX, e.clientY); if (!c) return;
+    var g = $('gridwrap').querySelector('.grid'); if (g && drag.d1 !== drag.d0) g.classList.add('dragging');
+    if (+c.dataset.d !== drag.d1) { drag.d1 = +c.dataset.d; marquer(); }
+  });
+  document.addEventListener('pointerup', function (e) {
+    if (!drag.on || e.pointerId !== drag.id) return;
+    var sid = drag.sid, d0 = drag.d0, d1 = drag.d1, ok = drag.actif || drag.touch;
+    finDrag(); drag.fin = Date.now();
+    if (ok) paintRange(sid, d0, d1);
+  });
+  document.addEventListener('pointercancel', function (e) { if (drag.on && e.pointerId === drag.id) finDrag(); });
+  // Pendant un glissement au doigt, le tableau ne défile pas et le menu de l'appui long ne s'ouvre pas.
+  $('gridwrap').addEventListener('touchmove', function (e) { if (drag.on && drag.actif) e.preventDefault(); }, { passive: false });
+  $('gridwrap').addEventListener('contextmenu', function (e) { if (drag.on || e.target.closest('.cell')) e.preventDefault(); });
   $('palette').addEventListener('click', function (e) { var b = e.target.closest('.brush'); if (!b) return; state.brush = b.dataset.brush; renderPalette(); });
   $('genBtn').onclick = generate; $('undoBtn').onclick = undo; $('clearBtn').onclick = clearGenerated;
   $('printBtn').onclick = function () { window.print(); };
