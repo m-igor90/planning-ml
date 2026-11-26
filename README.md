@@ -11,13 +11,21 @@ En ligne : https://m-igor90.github.io/planning-ml/
 - **Générer le planning** : remplit le mois en gardant les saisies à la main (coin bleu), les congés (CA), formations
   (FC), repos souhaités (RsA), repos temps partiel (Rtp) et les trames fixes. « Annuler » revient en arrière.
 - **Saisie** : choisir un code puis toucher les cases. 🔒 fixe une case pour le générateur, ⌫ la vide.
+  **Plusieurs jours d'un coup** : glisser de la première à la dernière case (au doigt : appui long, puis glisser) ;
+  CA, FC et B ne sont posés que du lundi au vendredi hors fériés. Ctrl+Z annule.
+- La grille montre aussi les 3 derniers jours du mois précédent et les 3 premiers du suivant (grisés). L'en-tête des
+  jours reste visible en descendant ; sur ordinateur, les colonnes se resserrent pour éviter la barre de défilement.
 - **Lignes de couverture** (sous chaque équipe) : rouge = poste manquant. Touchez un chiffre pour voir **qui peut
   venir** : les personnes possibles, de la plus en retard d'heures à la plus en avance, renforts et vacataire signalés,
   avec la raison quand une personne ne peut pas.
 - **Compteurs** par personne : heures / temps théorique, solde du mois, cumul (TTE reporté), nuits, week-ends.
 - **Contrôles** : liste des alertes réglementaires et des préférences non respectées ; les cases concernées sont
   surlignées.
-- **Imprimer** (A4 paysage) et **Exporter (CSV)** pour Excel.
+- **Indicateurs** (sous la grille) : couverture, heures et cumul de l'équipe, vacataire, renforts, absences, équité des
+  nuits et des week-ends, suivi des mois planifiés.
+- **Imprimer** (une page A4 paysage, en couleurs) et **Exporter (CSV)** pour Excel.
+- **Sauvegarder** (en haut à droite) : télécharge toutes les données dans un fichier daté ; un rappel s'affiche après
+  7 jours de modifications non sauvegardées.
 - **Équipe & règles** : une fiche par personne, les besoins par unité et par poste, les règles, les jours fériés,
   la sauvegarde (JSON).
 
@@ -45,7 +53,8 @@ partagées entre appareils : utiliser l'export JSON pour changer d'appareil.
   au plus 2 nuits, 3 postes de 12 h et 5 jours de travail d'affilée (réglables).
 - 48 h au plus sur 7 jours glissants (les heures après minuit comptent pour le jour suivant).
 - Un repos de 36 h chaque semaine ; 4 repos sur 2 semaines, dont 2 consécutifs avec un dimanche.
-- Particularités par personne : pas de nuit / moins / plus, agent de nuit (32h30), trame fixe, vacataire (minimum
+- Particularités par personne : pas de nuit / moins / plus, agent de nuit (32h30, uniquement des nuits), trame fixe
+  (si elle n'est pas saisie pour le mois, la ligne est générée et signalée « à vérifier »), vacataire (minimum
   nécessaire), jours travaillés autorisés, jours sans journée ou sans nuit, limite d'un jour de la semaine par mois,
   pas 2 postes d'affilée, alternance des week-ends, week-ends par mois au plus, priorité au temps théorique.
 - Équilibre des heures : chacune vise son temps théorique, corrigé de son cumul TTE de quelques heures par mois
@@ -62,4 +71,8 @@ décembre. Le prévisionnel lui-même n'est pas inclus.
 
 ```
 node --test tests/*.test.js
+node tests/bench.js
 ```
+
+`tests/bench.js` mesure le moteur sur janvier, février et mars enchaînés (postes non couverts, alertes, écart aux
+cibles, vacataire, dispersion des cumuls).

@@ -83,7 +83,9 @@ repos d'un dimanche toutes les 2 semaines).
 
 ## Points ouverts
 
-- Interface testée seulement avec un faux DOM sous Node : vérifier le rendu réel sur téléphone et sur PC.
+- Interface testée dans Chromium (Playwright) : PC de 1280 à 2560 px, téléphones et tablette simulés (iPhone 13, Pixel 7,
+  iPad Mini), mode sombre, impression PDF. Le geste au doigt (appui long puis glisser) reste à vérifier sur un vrai
+  téléphone, surtout un iPhone.
 - Pistes : import direct des exports Excel du logiciel du service, distinction RH/RC, postes de 7 h.
 
 ## Méthode de travail souhaitée
