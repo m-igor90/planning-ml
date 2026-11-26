@@ -270,7 +270,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <span class="eyebrow">Démo · V1.1.1 · Néo &amp; Kang</span>
+      <span class="eyebrow">Démo · V1.1.2 · Néo &amp; Kang</span>
       <h1>Planning du service</h1>
     </div>
     <div class="month">
@@ -319,7 +319,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <dialog class="wdlg" id="dlg" aria-labelledby="dlgTitle"></dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="planner.js?v=ml-1.1.1"></script>
+<script src="planner.js?v=ml-1.1.2"></script>
 <script>
 (function () {
   'use strict';
@@ -347,7 +347,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   function dname(s) { return ((s.prenom || '') + ' ' + (s.nom || '')).trim() || s.id; }
   function fmtH(h) { var n = h < 0, a = Math.abs(h), H = Math.floor(a + 1e-6), M = Math.round((a - H) * 60); if (M === 60) { H++; M = 0; } return (n ? '−' : '+') + H + 'h' + String(M).padStart(2, '0'); }
   function fmtA(h) { return fmtH(h).slice(1); }
-  function toast(t) { var el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(function () { el.hidden = true; }, 2600); }
+  function toast(t, ms) { var el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(function () { el.hidden = true; }, ms || 2600); }
   function codeHtml(c, u, home) { if (!c) return ''; var ren = u && u !== home; return '<span class="code ' + esc(c) + (ren ? ' ren' : '') + '">' + esc(c) + (ren ? '<sup>' + esc(u.slice(0, 1)) + '</sup>' : '') + '</span>'; }
 
   /* ---------- stockage ---------- */
@@ -389,9 +389,12 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
       $('status').className = 'status'; $('statusTxt').textContent = 'Enregistré dans ce navigateur';
       loadMonth();
     }
-    if (o.team) { var k = o.last || Object.keys(o.plans || {}).sort().pop(); var now = new Date(); start(o.team, null, k ? +k.slice(0, 4) : now.getFullYear(), k ? +k.slice(5, 7) : now.getMonth() + 1); return; }
+    if (o.team && (o.team.staff || []).length) { var k = o.last || Object.keys(o.plans || {}).sort().pop(); var now = new Date(); start(o.team, null, k ? +k.slice(0, 4) : now.getFullYear(), k ? +k.slice(5, 7) : now.getMonth() + 1); return; }
     fetch('exemple.json').then(function (r) { return r.json(); }).then(function (ex) { start(ex.team, ex.plans, 2027, 1); toast('Exemple chargé : janvier 2027'); })
-      .catch(function () { var now = new Date(); start({ units: [], rules: {}, staff: [] }, {}, now.getFullYear(), now.getMonth() + 1); });
+      .catch(function () {
+        var now = new Date(); start({ units: [], rules: {}, staff: [] }, null, now.getFullYear(), now.getMonth() + 1);
+        toast(location.protocol === 'file:' ? 'Exemple non chargé : ouvrez la page depuis le site (https://m-igor90.github.io/planning-ml/)' : 'Exemple non chargé : vérifiez la connexion puis rechargez la page', 15000);
+      });
   }
 
   /* ---------- soldes et continuité ---------- */
@@ -436,6 +439,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     save(); render();
   }
   function generate() {
+    if (!staff().length) { toast('Aucune personne dans l’équipe : ajoutez-la dans « Équipe & règles » ou rechargez l’exemple', 8000); return; }
     var btn = $('genBtn'); btn.disabled = true; btn.textContent = 'Calcul en cours…';
     setTimeout(function () {
       try {
@@ -444,6 +448,9 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
         state.plan.cells = res.cells; save(); render();
         var ev = P.evaluate(baseOpts());
         toast(ev.missing ? 'Planning généré : ' + ev.missing + ' poste(s) restent à couvrir' : 'Planning généré : tous les postes sont couverts');
+      } catch (e) {
+        if (window.console) console.error(e);
+        toast('Erreur pendant la génération : ' + (e && e.message ? e.message : e), 15000);
       } finally { btn.disabled = false; btn.textContent = 'Générer le planning'; }
     }, 30);
   }

@@ -14,7 +14,7 @@ Tout en français : interface, code, commentaires, messages de commit.
 - `exemple.json` : janvier 2027 tiré des documents du service, chargé au premier lancement.
 - `tests/planner.test.js` : `node --test tests/` (5 tests).
 - Clé localStorage `planning-ml-v1` (distincte de `planning-test`, même origine GitHub Pages).
-- Version affichée dans l'en-tête (`Démo · V1.1.1`) et `?v=ml-1.1.1` sur `planner.js` : les augmenter ensemble.
+- Version affichée dans l'en-tête (`Démo · V1.1.2`) et `?v=ml-1.1.2` sur `planner.js` : les augmenter ensemble.
 
 ## Service modélisé
 
