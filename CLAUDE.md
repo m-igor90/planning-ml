@@ -1,0 +1,70 @@
+# planning-ml — notes pour Claude Code
+
+Planning mensuel d'un service hospitalier à postes de 12 h, demandé par une cadre de santé (« ML ») qui gère
+plusieurs équipes. Démo publiée sur GitHub Pages : https://m-igor90.github.io/planning-ml/ (branche `main`, dossier
+racine). Dérivé de `m-igor90/planning-test` (même style d'interface), mais le moteur est propre à ce service.
+Tout en français : interface, code, commentaires, messages de commit.
+
+## Organisation
+
+- `index.html` : page unique (styles, interface). Pas de dépendance ni d'étape de build.
+- `planner.js` : moteur (`window.Planner` / `module.exports`) : `generate`, `evaluate`, `candidates`
+  (« Qui peut venir ? »), `theoretical`, `holidaysDefault` (France). Construction gloutonne puis recuit simulé,
+  environ 1 s pour un mois.
+- `exemple.json` : janvier 2027 tiré des documents du service, chargé au premier lancement.
+- `tests/planner.test.js` : `node --test tests/` (5 tests).
+- Clé localStorage `planning-ml-v1` (distincte de `planning-test`, même origine GitHub Pages).
+- Version affichée dans l'en-tête (`Démo · V1.1.0`) et `?v=ml-1.1.0` sur `planner.js` : les augmenter ensemble.
+
+## Service modélisé
+
+- Deux unités : médecine néonatale (`NEO`) et unité kangourou (`KAN`). Fonctions : IDE/PDE (groupe `inf`) et AP
+  (groupe `ap`) ; cadre hors planning.
+- Besoins par jour, réglables : NEO 2 IDE/PDE de jour et de nuit ; KAN 1 IDE/PDE et 1 AP de jour et de nuit.
+- Codes : J (7h-19h, 12 h), N (19h-7h, valeur 12h50), B (journée de 7 h en semaine, équivalent B100, au prorata),
+  CA (congé, 7 h × taux), FC (formation 7 h), RsA, Rtp, RH, RC, RPV, JF. `J@KAN` = renfort dans une autre unité.
+  Préfixe `!` = case fixée. CA, FC, RsA, Rtp, JF et les lignes « trame fixe » ne sont jamais modifiés.
+- Règles (documents « Réglementation planning ») : repos de veille après une nuit puis repos, 12 h entre deux
+  postes, 48 h sur 7 jours glissants (heures après minuit sur le lendemain), 36 h de repos par semaine, 4 repos
+  sur 2 semaines dont 2 consécutifs avec un dimanche. Renfort entre unités préféré aux heures supplémentaires.
+- Temps théorique : 7 h par jour ouvré au prorata du taux (agent de nuit : 32h30/35), surchargeable par mois.
+- Équilibre des heures : cible = théorique corrigé du cumul TTE (rattrapage 24 h par mois au plus) vers le
+  « solde visé » de la personne.
+- Vacataire : coût élevé par heure, utilisée le moins possible.
+
+## Données et confidentialité
+
+- Les documents d'origine (Word et Excel du service) ne sont pas dans le dépôt et ne doivent pas y être ajoutés.
+- Prénoms réduits aux 2 premières lettres, numérotés en cas de doublon (Ma1, Ma2, Ma3, Em1, Em2, An1, An2, El1,
+  El2) ; aucun matricule ; cadre exclue.
+
+## Résultat de référence (janvier 2027)
+
+Prévisionnel du service : 14 postes non couverts, 41 alertes, écart moyen à la cible 39 h.
+Généré : 0 poste non couvert, 2 alertes (trames fixes à plus de 48 h sur 7 jours avec la nuit à 12h50),
+écart moyen 21 h.
+
+## Questions en attente pour la responsable
+
+1. Quelle est la 4e équipe ? Y a-t-il des AP en néonatale, combien par poste ?
+2. 48 h sur 7 jours : nuit comptée 12 h effectives ou 12h50 ?
+3. B100 « jour potentiel travaillable » : journée de 7 h réellement travaillée (quels horaires) ou réserve ?
+4. « Garder une marge de 65 h sup » (Em2) : garder 65 h au compteur ou ne pas dépasser 65 h ? (codé : solde visé 65)
+5. Alternance des week-ends (An2, Is) déduite de janvier : à confirmer.
+6. « R » gris au-dessus de Lo du 1er au 3 janvier : signification ?
+7. Postes de 7 h de la légende (6h25, 13h, 20h45) utilisés ? Faut-il distinguer RH et RC ?
+8. Renforts vers les autres services (USC, SAU, maternité, grands enfants) à gérer ?
+
+Particularités volontairement traitées comme préférences : « tous les week-ends travaillés » (conflit avec le
+repos d'un dimanche toutes les 2 semaines).
+
+## Points ouverts
+
+- Interface testée seulement avec un faux DOM sous Node : vérifier le rendu réel sur téléphone et sur PC.
+- Pistes : import direct des exports Excel du logiciel du service, distinction RH/RC, postes de 7 h.
+
+## Méthode de travail souhaitée
+
+- Mesurer avant et après chaque changement du moteur sur janvier 2027 (postes manquants, alertes, écart aux
+  cibles, dispersion des cumuls).
+- Publier sur `main` quand c'est demandé, puis vérifier le déploiement GitHub Pages.
