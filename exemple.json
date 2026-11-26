@@ -1,475 +1,584 @@
 {
-  "app": "planning-soins",
-  "version": 1,
-  "team": {
-    "rules": {
-      "fillHours": true,
-      "hpd": 8.416666666666666,
-      "maxConsecutive": 5,
-      "renfort": "D2",
-      "tutoratMax": 2
-    },
-    "staff": [
-      {
-        "groupe": "tertiaire",
-        "id": "l",
-        "joursInterdits": [],
-        "nom": "",
-        "prenom": "P1",
-        "role": "admin",
-        "taux": 60,
-        "tutorat": false
-      },
-      {
-        "groupe": "tertiaire",
-        "id": "mi",
-        "joursInterdits": [],
-        "nom": "",
-        "prenom": "P2",
-        "role": "soins",
-        "taux": 70,
-        "tutorat": false
-      },
-      {
-        "groupe": "tertiaire",
-        "id": "v",
-        "joursInterdits": [],
-        "nom": "",
-        "prenom": "P3",
-        "role": "soins",
-        "taux": 90,
-        "tutorat": false
-      },
-      {
-        "groupe": "tertiaire",
-        "id": "ja",
-        "joursInterdits": [],
-        "nom": "",
-        "prenom": "P4",
-        "role": "soins",
-        "taux": 70,
-        "tutorat": false
-      },
-      {
-        "groupe": "tertiaire",
-        "id": "ma",
-        "joursInterdits": [
-          3
-        ],
-        "nom": "",
-        "prenom": "P5",
-        "role": "soins",
-        "taux": 80,
-        "tutorat": false
-      },
-      {
-        "groupe": "tertiaire",
-        "id": "r",
-        "joursInterdits": [],
-        "maxSuite": 3,
-        "nom": "",
-        "prenom": "P6",
-        "role": "soins",
-        "taux": 50,
-        "tutorat": false
-      },
-      {
-        "groupe": "tertiaire",
-        "id": "c",
-        "joursInterdits": [],
-        "nom": "",
-        "prenom": "P7",
-        "role": "soins",
-        "taux": 70,
-        "tutorat": false
-      },
-      {
-        "groupe": "tertiaire",
-        "id": "ju",
-        "joursInterdits": [],
-        "nom": "",
-        "prenom": "P8",
-        "role": "soins",
-        "taux": 80,
-        "tutorat": false
-      },
-      {
-        "groupe": "secondaire",
-        "id": "e",
-        "joursInterdits": [],
-        "nom": "",
-        "prenom": "P9",
-        "role": "soins",
-        "taux": 80,
-        "tutorat": true
-      },
-      {
-        "groupe": "secondaire",
-        "id": "k",
-        "joursInterdits": [],
-        "nom": "",
-        "prenom": "P10",
-        "role": "soins",
-        "taux": 80,
-        "tutorat": false
-      }
-    ]
-  },
-  "plans": {
-    "2027-01": {
-      "cells": {
-        "l": {
-          "4": "CS",
-          "6": "CS",
-          "8": "CS",
-          "11": "CS",
-          "13": "CS",
-          "15": "CS",
-          "18": "CS",
-          "20": "CS",
-          "22": "CS",
-          "25": "CS",
-          "27": "CS",
-          "29": "CS"
-        },
-        "mi": {
-          "5": "M5",
-          "6": "D2",
-          "7": "C1",
-          "11": "M5",
-          "12": "D2",
-          "16": "C1",
-          "17": "M1",
-          "18": "C1",
-          "21": "D2",
-          "22": "M1",
-          "25": "M1",
-          "26": "M5",
-          "27": "D2"
-        },
-        "v": {
-          "2": "M1",
-          "3": "C1",
-          "4": "C1",
-          "6": "D2",
-          "7": "M1",
-          "8": "C1",
-          "11": "M1",
-          "12": "M5",
-          "13": "D2",
-          "18": "M5",
-          "22": "D2",
-          "23": "C1",
-          "24": "M5",
-          "26": "D2",
-          "27": "M5",
-          "29": "D2",
-          "30": "M5",
-          "31": "M1"
-        },
-        "ja": {
-          "5": "M1",
-          "6": "M1",
-          "9": "M1",
-          "10": "C1",
-          "11": "C1",
-          "14": "D2",
-          "15": "M5",
-          "18": "D2",
-          "19": "C1",
-          "21": "D2",
-          "22": "M5",
-          "27": "D2",
-          "28": "M5",
-          "29": "M5"
-        },
-        "ma": {
-          "2": "C1",
-          "3": "M5",
-          "4": "M5",
-          "7": "D2",
-          "8": "M1",
-          "11": "D2",
-          "12": "C1",
-          "14": "C1",
-          "15": "C1",
-          "18": "D2",
-          "19": "M5",
-          "23": "M5",
-          "24": "M1",
-          "25": "D2",
-          "26": "M1",
-          "29": "D2"
-        },
-        "r": {
-          "3": "!X",
-          "4": "D2",
-          "5": "C1",
-          "6": "!X",
-          "8": "D2",
-          "13": "M1",
-          "14": "M1",
-          "16": "M5",
-          "17": "C1",
-          "20": "M5",
-          "21": "M1",
-          "22": "D2"
-        },
-        "c": {
-          "2": "M5",
-          "3": "M1",
-          "5": "D2",
-          "6": "C1",
-          "11": "D2",
-          "12": "M1",
-          "13": "C1",
-          "19": "D2",
-          "20": "M1",
-          "21": "M5",
-          "25": "M5",
-          "26": "C1",
-          "28": "D2",
-          "29": "M1"
-        },
-        "ju": {
-          "1": "C1",
-          "4": "M1",
-          "5": "D2",
-          "7": "M5",
-          "8": "M5",
-          "13": "D2",
-          "15": "D2",
-          "16": "M1",
-          "17": "M5",
-          "19": "M1",
-          "20": "D2",
-          "26": "D2",
-          "27": "C1",
-          "28": "C1",
-          "30": "C1",
-          "31": "M5"
-        },
-        "e": {
-          "1": "M5",
-          "4": "T",
-          "8": "D2",
-          "9": "M5",
-          "10": "M1",
-          "13": "M5",
-          "14": "T",
-          "15": "M1",
-          "18": "M1",
-          "19": "D2",
-          "20": "C1",
-          "23": "M1",
-          "24": "C1",
-          "25": "C1",
-          "28": "D2",
-          "29": "C1"
-        },
-        "k": {
-          "1": "M1",
-          "6": "M5",
-          "7": "D2",
-          "9": "C1",
-          "10": "M5",
-          "12": "D2",
-          "14": "M5",
-          "15": "D2",
-          "20": "D2",
-          "21": "C1",
-          "22": "C1",
-          "25": "D2",
-          "27": "M1",
-          "28": "M1",
-          "30": "M1",
-          "31": "C1"
-        }
-      },
-      "holidays": [
-        1,
-        2
-      ],
-      "month": 1,
-      "year": 2027
-    },
-    "2027-02": {
-      "cells": {
-        "c": {
-          "2": "M1",
-          "3": "M5",
-          "5": "D2",
-          "6": "C1",
-          "7": "M5",
-          "9": "D2",
-          "10": "M1",
-          "11": "!X",
-          "16": "D2",
-          "17": "D2",
-          "18": "M5",
-          "19": "M1",
-          "22": "C1",
-          "23": "C1"
-        },
-        "e": {
-          "1": "T",
-          "2": "M5",
-          "3": "M1",
-          "6": "M5",
-          "7": "M1",
-          "10": "T",
-          "11": "D2",
-          "15": "M1",
-          "16": "M5",
-          "17": "C1",
-          "18": "C1",
-          "22": "D2",
-          "23": "M1",
-          "26": "D2",
-          "27": "C1"
-        },
-        "ja": {
-          "1": "M5",
-          "4": "M1",
-          "5": "D2",
-          "6": "!X",
-          "7": "!X",
-          "8": "D2",
-          "9": "M5",
-          "10": "C1",
-          "13": "M5",
-          "14": "M1",
-          "15": "C1",
-          "17": "D2",
-          "18": "D2",
-          "24": "M1",
-          "25": "C1"
-        },
-        "ju": {
-          "2": "D2",
-          "3": "D2",
-          "4": "D2",
-          "8": "C1",
-          "10": "M5",
-          "11": "M5",
-          "12": "D2",
-          "18": "!X",
-          "19": "C1",
-          "20": "C1",
-          "21": "M1",
-          "23": "D2",
-          "24": "C1",
-          "26": "M1",
-          "27": "M1",
-          "28": "M5"
-        },
-        "k": {
-          "3": "D2",
-          "4": "D2",
-          "5": "M5",
-          "8": "M1",
-          "9": "C1",
-          "11": "C1",
-          "12": "C1",
-          "15": "D2",
-          "16": "M1",
-          "18": "M1",
-          "19": "M5",
-          "24": "D2",
-          "25": "D2",
-          "27": "M5",
-          "28": "M1"
-        },
-        "l": {
-          "1": "CS",
-          "3": "CS",
-          "5": "CS",
-          "8": "CS",
-          "10": "CS",
-          "12": "CS",
-          "15": "CS",
-          "17": "CS",
-          "19": "CS",
-          "22": "CS",
-          "24": "CS",
-          "26": "CS"
-        },
-        "ma": {
-          "1": "M1",
-          "2": "D2",
-          "4": "M5",
-          "5": "C1",
-          "8": "M5",
-          "9": "D2",
-          "13": "C1",
-          "14": "M5",
-          "15": "D2",
-          "19": "D2",
-          "22": "M1",
-          "23": "D2",
-          "25": "M1",
-          "26": "M5",
-          "28": "C1"
-        },
-        "mi": {
-          "1": "C1",
-          "2": "!X",
-          "5": "M1",
-          "6": "M1",
-          "7": "C1",
-          "8": "!X",
-          "9": "!X",
-          "10": "!X",
-          "11": "M1",
-          "12": "D2",
-          "15": "M5",
-          "16": "C1",
-          "18": "D2",
-          "19": "D2",
-          "22": "M5",
-          "23": "M5",
-          "24": "D2"
-        },
-        "r": {
-          "1": "D2",
-          "3": "!X",
-          "4": "!X",
-          "5": "!X",
-          "6": "!X",
-          "7": "!X",
-          "11": "D2",
-          "12": "M1",
-          "16": "D2",
-          "17": "M1",
-          "20": "M5",
-          "21": "C1",
-          "25": "M5",
-          "26": "C1"
-        },
-        "v": {
-          "2": "C1",
-          "3": "C1",
-          "4": "C1",
-          "8": "D2",
-          "9": "M1",
-          "10": "D2",
-          "12": "M5",
-          "13": "M1",
-          "14": "C1",
-          "16": "!X",
-          "17": "M5",
-          "18": "D2",
-          "20": "M1",
-          "21": "M5",
-          "22": "D2",
-          "24": "M5",
-          "25": "D2",
-          "26": "D2"
-        }
-      },
-      "holidays": [],
-      "month": 2,
-      "year": 2027
+ "team": {
+  "units": [
+   {
+    "id": "NEO",
+    "nom": "Médecine néonatale",
+    "besoins": {
+     "inf": {
+      "J": 2,
+      "N": 2
+     },
+     "ap": {
+      "J": 0,
+      "N": 0
+     }
     }
+   },
+   {
+    "id": "KAN",
+    "nom": "Unité kangourou",
+    "besoins": {
+     "inf": {
+      "J": 1,
+      "N": 1
+     },
+     "ap": {
+      "J": 1,
+      "N": 1
+     }
+    }
+   }
+  ],
+  "rules": {},
+  "staff": [
+   {
+    "id": "Mo",
+    "prenom": "Mo",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "NEO",
+    "taux": 100,
+    "polyvalence": [
+     "KAN"
+    ],
+    "nuits": "moins",
+    "prioriteHeures": true,
+    "note": "Moins de nuit possible ; respecter au maximum le TTE théorique",
+    "soldeInitial": 32.75,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Ro",
+    "prenom": "Ro",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "NEO",
+    "taux": 90,
+    "polyvalence": [],
+    "nuits": "plus",
+    "note": "Plus de nuit possible en laissant 2 à 3 jours par mois",
+    "soldeInitial": 64.62,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Sa",
+    "prenom": "Sa",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "NEO",
+    "taux": 100,
+    "polyvalence": [
+     "KAN"
+    ],
+    "nuits": "non",
+    "weekendsTous": true,
+    "note": "Pas de nuit, tous les week-ends travaillés S-D de jour",
+    "soldeInitial": -6.88,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Ma1",
+    "prenom": "Ma1",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "NEO",
+    "taux": 100,
+    "polyvalence": [],
+    "soldeInitial": 21.25,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Ca",
+    "prenom": "Ca",
+    "nom": "",
+    "qualif": "IDE",
+    "unite": "NEO",
+    "taux": 100,
+    "polyvalence": [],
+    "nuits": "plus",
+    "note": "Nuit supplémentaire OK",
+    "soldeInitial": 44.27,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Do",
+    "prenom": "Do",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "NEO",
+    "taux": 100,
+    "polyvalence": [
+     "KAN"
+    ],
+    "reposApresNuit": 3,
+    "note": "3 jours non travaillés après des nuits",
+    "soldeInitial": 35.33,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Ma2",
+    "prenom": "Ma2",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "NEO",
+    "taux": 100,
+    "polyvalence": [],
+    "soldeInitial": 69.17,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Em2",
+    "prenom": "Em2",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "NEO",
+    "taux": 100,
+    "polyvalence": [],
+    "soldeVise": 65,
+    "note": "Garder une marge de 65 h sup (à confirmer)",
+    "soldeInitial": 73.58,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Al",
+    "prenom": "Al",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "NEO",
+    "taux": 100,
+    "polyvalence": [],
+    "nuits": "plus",
+    "pasDeuxPostes": "jour",
+    "note": "Nuit supplémentaire OK, pas 2 postes de jour d’affilée",
+    "soldeInitial": 55.25,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Le",
+    "prenom": "Le",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "NEO",
+    "taux": 80,
+    "polyvalence": [
+     "KAN"
+    ],
+    "nuits": "moins",
+    "note": "Le moins de nuit possible",
+    "soldeInitial": 73.4,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Na",
+    "prenom": "Na",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "NEO",
+    "taux": 80,
+    "polyvalence": [
+     "KAN"
+    ],
+    "soldeInitial": 77.8,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Em1",
+    "prenom": "Em1",
+    "nom": "",
+    "qualif": "IDE",
+    "unite": "NEO",
+    "taux": 60,
+    "polyvalence": [],
+    "joursAutorises": [
+     3,
+     6,
+     0
+    ],
+    "note": "Travaille uniquement les mercredis et samedis-dimanches",
+    "soldeInitial": 21.62,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "An1",
+    "prenom": "An1",
+    "nom": "",
+    "qualif": "IDE",
+    "unite": "NEO",
+    "taux": 100,
+    "polyvalence": [],
+    "vacataire": true,
+    "nuits": "non",
+    "pasDeuxPostes": "horsWE",
+    "maxWE": 1,
+    "note": "Vacataire : travaille le minimum nécessaire, max 1 week-end ; pas de nuit ni 2 postes d’affilée hors week-end",
+    "soldeInitial": -8.35,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "So",
+    "prenom": "So",
+    "nom": "",
+    "qualif": "IDE",
+    "unite": "NEO",
+    "taux": 100,
+    "polyvalence": [
+     "KAN"
+    ],
+    "agentNuit": true,
+    "trameFixe": true,
+    "note": "Fixe de nuit, trame à ne pas changer",
+    "soldeInitial": 48.17,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "An2",
+    "prenom": "An2",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "KAN",
+    "taux": 100,
+    "polyvalence": [
+     "NEO"
+    ],
+    "weRef": "2027-01-09",
+    "note": "Alternance des week-ends (garde alternée)",
+    "soldeInitial": 20.25,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "El1",
+    "prenom": "El1",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "KAN",
+    "taux": 80,
+    "polyvalence": [],
+    "maxParJour": {
+     "4": 1
+    },
+    "note": "Pas plus de 1 jeudi par mois ; polyvalence maternité",
+    "soldeInitial": 44.75,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Ma3",
+    "prenom": "Ma3",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "KAN",
+    "taux": 100,
+    "polyvalence": [],
+    "note": "Polyvalence : grands enfants",
+    "soldeInitial": 54.92,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Is",
+    "prenom": "Is",
+    "nom": "",
+    "qualif": "IDE",
+    "unite": "KAN",
+    "taux": 100,
+    "polyvalence": [
+     "NEO"
+    ],
+    "weRef": "2027-01-16",
+    "note": "Alternance des week-ends (garde alternée)",
+    "soldeInitial": 44.75,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Au",
+    "prenom": "Au",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "KAN",
+    "taux": 80,
+    "polyvalence": [],
+    "prioriteHeures": true,
+    "note": "Respecter le temps partiel 80 % ; polyvalence USC",
+    "soldeInitial": 52.17,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Ta",
+    "prenom": "Ta",
+    "nom": "",
+    "qualif": "PDE",
+    "unite": "KAN",
+    "taux": 100,
+    "polyvalence": [],
+    "note": "Polyvalence : grands enfants",
+    "soldeInitial": 37.08,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Ju",
+    "prenom": "Ju",
+    "nom": "",
+    "qualif": "AP",
+    "unite": "KAN",
+    "taux": 80,
+    "polyvalence": [
+     "NEO"
+    ],
+    "soldeInitial": 62.88,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Ga",
+    "prenom": "Ga",
+    "nom": "",
+    "qualif": "AP",
+    "unite": "KAN",
+    "taux": 80,
+    "polyvalence": [],
+    "soldeInitial": 41.08,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "El2",
+    "prenom": "El2",
+    "nom": "",
+    "qualif": "AP",
+    "unite": "KAN",
+    "taux": 80,
+    "polyvalence": [],
+    "agentNuit": true,
+    "trameFixe": true,
+    "note": "Fixe de nuit, ne pas modifier sa trame ; polyvalence maternité",
+    "soldeInitial": -10.58,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "La",
+    "prenom": "La",
+    "nom": "",
+    "qualif": "AP",
+    "unite": "KAN",
+    "taux": 100,
+    "polyvalence": [],
+    "soldeInitial": 38.58,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "As",
+    "prenom": "As",
+    "nom": "",
+    "qualif": "AP",
+    "unite": "KAN",
+    "taux": 80,
+    "polyvalence": [],
+    "desirs": {
+     "3": [
+      "J",
+      "B"
+     ]
+    },
+    "note": "Pas de moyen de garde le mercredi en journée",
+    "soldeInitial": 35.72,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Ci",
+    "prenom": "Ci",
+    "nom": "",
+    "qualif": "AP",
+    "unite": "KAN",
+    "taux": 80,
+    "polyvalence": [
+     "NEO"
+    ],
+    "note": "Respecter les demandes de congés (mandat local)",
+    "soldeInitial": 56.03,
+    "soldeDebut": "2027-01"
+   },
+   {
+    "id": "Lo",
+    "prenom": "Lo",
+    "nom": "",
+    "qualif": "AP",
+    "unite": "KAN",
+    "taux": 100,
+    "polyvalence": [],
+    "note": "Auxiliaire de puériculture ; polyvalence SAU",
+    "soldeInitial": 44.08,
+    "soldeDebut": "2027-01"
+   }
+  ]
+ },
+ "plans": {
+  "2027-01": {
+   "year": 2027,
+   "month": 1,
+   "holidays": [
+    1
+   ],
+   "cells": {
+    "Mo": {},
+    "Ro": {},
+    "Sa": {
+     "29": "RsA"
+    },
+    "Ma1": {
+     "4": "CA",
+     "5": "CA",
+     "6": "CA",
+     "7": "CA",
+     "8": "CA",
+     "11": "CA"
+    },
+    "Ca": {},
+    "Do": {
+     "4": "CA"
+    },
+    "Ma2": {},
+    "Em2": {},
+    "Al": {
+     "15": "RsA",
+     "29": "RsA"
+    },
+    "Le": {
+     "8": "RsA",
+     "19": "RsA"
+    },
+    "Na": {
+     "27": "RsA"
+    },
+    "Em1": {},
+    "An1": {
+     "6": "RsA",
+     "14": "RsA",
+     "19": "RsA",
+     "26": "RsA"
+    },
+    "So": {
+     "1": "N",
+     "2": "RPV",
+     "4": "N",
+     "5": "N",
+     "6": "RPV",
+     "8": "N",
+     "9": "RPV",
+     "13": "N",
+     "14": "N",
+     "15": "RPV",
+     "18": "N",
+     "19": "N",
+     "20": "RPV",
+     "23": "N",
+     "24": "N",
+     "25": "RPV",
+     "27": "N",
+     "28": "N",
+     "29": "RPV"
+    },
+    "An2": {},
+    "El1": {
+     "22": "RsA",
+     "25": "CA",
+     "26": "CA",
+     "27": "CA",
+     "28": "CA",
+     "29": "CA"
+    },
+    "Ma3": {
+     "11": "CA",
+     "12": "CA",
+     "13": "CA",
+     "14": "CA",
+     "15": "CA"
+    },
+    "Is": {
+     "20": "CA",
+     "21": "CA",
+     "22": "CA"
+    },
+    "Au": {
+     "1": "Rtp"
+    },
+    "Ta": {
+     "4": "CA",
+     "5": "CA",
+     "6": "CA",
+     "7": "CA",
+     "8": "CA",
+     "11": "CA"
+    },
+    "Ju": {
+     "18": "CA",
+     "19": "CA",
+     "20": "CA",
+     "21": "CA",
+     "22": "CA"
+    },
+    "Ga": {
+     "22": "CA",
+     "25": "CA",
+     "26": "CA",
+     "27": "CA"
+    },
+    "El2": {
+     "4": "RPV",
+     "6": "N",
+     "7": "N",
+     "8": "RPV",
+     "13": "N",
+     "14": "N",
+     "15": "RPV",
+     "18": "N",
+     "19": "N",
+     "20": "RPV",
+     "23": "N",
+     "24": "N",
+     "25": "RPV",
+     "27": "N",
+     "28": "N",
+     "29": "RPV"
+    },
+    "La": {
+     "7": "RsA",
+     "21": "RsA"
+    },
+    "As": {},
+    "Ci": {
+     "1": "Rtp",
+     "8": "RsA",
+     "22": "RsA",
+     "28": "RsA"
+    },
+    "Lo": {}
+   },
+   "theo": {
+    "Mo": 120.0,
+    "Ro": 126.0,
+    "Sa": 140.0,
+    "Ma1": 140.0,
+    "Ca": 140.0,
+    "Do": 140.0,
+    "Ma2": 140.0,
+    "Em2": 140.0,
+    "Al": 140.0,
+    "Le": 112.0,
+    "Na": 112.0,
+    "Em1": 84.0,
+    "An1": 84.0,
+    "So": 130.0,
+    "An2": 140.0,
+    "El1": 112.0,
+    "Ma3": 140.0,
+    "Is": 140.0,
+    "Au": 112.0,
+    "Ta": 140.0,
+    "Ju": 112.0,
+    "Ga": 112.0,
+    "El2": 112.0,
+    "La": 140.0,
+    "As": 112.0,
+    "Ci": 112.0,
+    "Lo": 140.0
+   }
   }
+ }
 }
