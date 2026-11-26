@@ -103,7 +103,23 @@ table.grid { border-collapse: separate; border-spacing: 0; font-variant-numeric:
 .grid .dn th { padding: 3px 0; }
 .grid .dn .num { display: block; font-family: var(--f-display); font-size: 16px; color: var(--ink); line-height: 1; }
 .grid .col-name { position: sticky; left: 0; z-index: 2; background: var(--surface); text-align: left; padding: 0 8px; min-width: 132px; max-width: 160px; border-right: 1px solid var(--line); }
-.grid thead .col-name { z-index: 3; }
+.grid thead .col-name { z-index: 4; }
+/* En-tête des jours toujours visible : collé sous la barre de saisie quand le tableau tient dans la page (--stickyTop) ;
+   sinon (téléphone, tablette : le tableau défile de côté) une copie de l'en-tête s'affiche sous la barre (#floatHead). */
+.gridwrap.fit { overflow: visible; }
+.gridwrap.fit .grid thead th { position: sticky; top: var(--stickyTop, 0px); z-index: 3; box-shadow: 0 1px 0 var(--line); }
+.gridwrap.fit .grid thead th.col-name { z-index: 4; }
+.floathead { position: fixed; z-index: 4; overflow: hidden; background: var(--surface); box-shadow: 0 2px 4px rgba(10, 16, 24, .12); border-bottom: 1px solid var(--line); }
+.floathead table.grid { position: relative; }
+.floathead th.col-name { position: relative; z-index: 2; }
+.grid thead th.prevd, .grid thead th.nextd { opacity: 1; }
+.grid thead th.prevd > *, .grid thead th.nextd > *, .grid thead th.prevd, .grid thead th.nextd { color: color-mix(in srgb, var(--muted) 60%, transparent); }
+.grid thead th.prevd .num, .grid thead th.nextd .num { color: color-mix(in srgb, var(--ink) 40%, transparent); }
+@media (max-width: 600px) {
+  .grid .col-name { min-width: 88px; max-width: 108px; padding: 0 6px; }
+  .grid .name { font-size: 12.5px; } .grid .meta { font-size: 10px; line-height: 1.2; display: block; }
+}
+.palette-hint { margin-top: -8px; }
 .grid .name { display: block; font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .grid .meta { font-size: 11px; color: var(--muted); }
 .grid .group th { text-align: left; font-family: var(--f-display); text-transform: uppercase; letter-spacing: .1em; font-size: 12.5px; color: var(--accent); padding: 8px 8px 4px; background: var(--surface); }
@@ -300,6 +316,8 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   body { background: #fff; font-size: 10px; }
   .toolbar, .palette, #settings, #exportPanel, .cols, #kpi, .status, .month .iconbtn, #confirmZone, .toast { display: none !important; }
   .gridwrap { overflow: visible; border: 0; }
+  .grid thead th, .gridwrap.fit .grid thead th { position: static; box-shadow: none; }
+  #paletteHint, .floathead { display: none !important; }
   /* Couleurs : toujours le thème clair, et les fonds imprimés (sinon les N et CA, en lettres blanches, disparaissent). */
   :root, :root:not([data-theme="light"]), :root[data-theme="dark"] {
   --bg: #f3f5f8; --surface: #ffffff; --ink: #1a2330; --muted: #5b6878; --line: #d9e0e8; --line-soft: #e9edf2;
@@ -330,7 +348,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <span class="eyebrow">Démo · V1.4.1 · Néo &amp; Kang</span>
+      <span class="eyebrow">Démo · V1.5.0 · Néo &amp; Kang</span>
       <h1>Planning du service</h1>
     </div>
     <div class="month">
@@ -353,6 +371,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   <div id="confirmZone"></div>
   <div class="summary" id="summary"></div>
   <div class="palette" id="palette"></div>
+  <div class="hint palette-hint" id="paletteHint">Touchez une case pour y poser le code choisi. Plusieurs jours : glissez de la première à la dernière case (au doigt : appui long, puis glisser).</div>
   <div class="gridwrap" id="gridwrap"><div class="empty">Chargement du planning…</div></div>
 
   <section class="panel" id="kpi" aria-labelledby="kpiTitle"></section>
@@ -381,7 +400,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <dialog class="wdlg" id="dlg" aria-labelledby="dlgTitle"></dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="planner.js?v=ml-1.4.1"></script>
+<script src="planner.js?v=ml-1.5.0"></script>
 <script>
 (function () {
   'use strict';
@@ -622,7 +641,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
         h += '<button class="brush" data-brush="' + b + '" aria-pressed="' + (state.brush === b) + '" title="' + esc(title) + '">' + inner + '</button>';
       });
     });
-    $('palette').innerHTML = h + '<span class="hint">Touchez une case pour y poser le code choisi. Plusieurs jours : glissez de la première à la dernière case (au doigt, appui long puis glisser).</span>';
+    $('palette').innerHTML = h;
   }
   function renderGrid(ev) {
     var info = ev.info;
@@ -690,7 +709,40 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
      barre de défilement. Sur téléphone et tablette en portrait, le tableau garde sa taille et défile. */
   var CW_MIN = 23;
   var largeurVue = {};
-  function ajusterLargeur() {
+  function ajusterLargeur() { largeurJours(); collerEntete(); }
+  function collerEntete() {
+    var g = $('gridwrap'), t = g.querySelector('table.grid'), r = document.documentElement.style; if (!t) return;
+    var fit = t.offsetWidth <= g.clientWidth + 1;
+    var ph = $('palette').offsetHeight; r.setProperty('--palH', ph + 'px');
+    g.classList.toggle('fit', fit); r.setProperty('--stickyTop', fit ? ph + 'px' : '0px');
+    enteteFlottant(fit ? null : t);
+  }
+  /* Copie de l'en-tête des jours, affichée sous la barre de saisie quand le vrai en-tête est sorti de l'écran. */
+  var flot = null;
+  function enteteFlottant(t) {
+    if (flot) { flot.el.remove(); flot = null; }
+    if (!t || !t.tHead) return;
+    var el = document.createElement('div'), tb = t.cloneNode(false), th = t.tHead.cloneNode(true);
+    el.className = 'floathead'; el.id = 'floatHead'; el.hidden = true; el.setAttribute('aria-hidden', 'true');
+    tb.appendChild(th); tb.style.width = t.offsetWidth + 'px'; tb.style.tableLayout = 'fixed';
+    var vrais = t.tHead.rows[0].cells, copies = th.rows[0].cells;
+    for (var i = 0; i < vrais.length; i++) { var w = vrais[i].getBoundingClientRect().width + 'px'; copies[i].style.width = w; copies[i].style.minWidth = w; copies[i].style.maxWidth = w; }
+    el.appendChild(tb); document.body.appendChild(el);
+    flot = { el: el, tb: tb, nom: copies[0], t: t };
+    placerEntete();
+  }
+  function placerEntete() {
+    if (!flot) return;
+    var g = $('gridwrap'), haut = $('palette').getBoundingClientRect().bottom, rt = flot.t.tHead.getBoundingClientRect(), rg = g.getBoundingClientRect();
+    var montrer = rt.top < haut && flot.t.getBoundingClientRect().bottom > haut + rt.height + 20;
+    if (flot.el.hidden === montrer) flot.el.hidden = !montrer;
+    if (!montrer) return;
+    var sl = g.scrollLeft;
+    flot.el.style.top = haut + 'px'; flot.el.style.left = (rg.left + g.clientLeft) + 'px'; flot.el.style.width = g.clientWidth + 'px';
+    flot.tb.style.transform = 'translateX(' + (-sl) + 'px)'; flot.nom.style.transform = 'translateX(' + sl + 'px)';
+  }
+  window.addEventListener('scroll', placerEntete, { passive: true });
+  function largeurJours() {
     var g = $('gridwrap'), t = g.querySelector('table.grid'); if (!t) return;
     // Même écran et même nombre de colonnes que la fois précédente : on réapplique la largeur trouvée (une seule mise en page)
     var cle = window.innerWidth + '|' + t.rows[0].cells.length, connu = largeurVue[cle];
@@ -1005,6 +1057,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   $('settingsBtn').onclick = function () { state.settingsOpen = !state.settingsOpen; renderSettings(); if (state.settingsOpen) $('settings').scrollIntoView({ block: 'start', behavior: 'smooth' }); };
   $('prev').onclick = function () { state.m--; if (state.m < 1) { state.m = 12; state.y--; } loadMonth(); };
   $('next').onclick = function () { state.m++; if (state.m > 12) { state.m = 1; state.y++; } loadMonth(); };
+  $('gridwrap').addEventListener('scroll', placerEntete, { passive: true });
   $('kpi').addEventListener('click', function (e) { var b = e.target.closest('[data-goto]'); if (!b) return; state.y = +b.dataset.goto.slice(0, 4); state.m = +b.dataset.goto.slice(5, 7); loadMonth(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
   $('settings').addEventListener('change', onSettingsChange);
   $('settings').addEventListener('click', onSettingsClick);
