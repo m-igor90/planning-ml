@@ -70,4 +70,6 @@ repos d'un dimanche toutes les 2 semaines).
 
 - Mesurer avant et après chaque changement du moteur sur janvier 2027 (postes manquants, alertes, écart aux
   cibles, dispersion des cumuls).
-- Publier sur `main` quand c'est demandé, puis vérifier le déploiement GitHub Pages.
+- Publier sur `main` sans demander, dès qu'un changement est testé (tests Node + essai dans Chromium) : commit sur la
+  branche de travail, puis `git push origin HEAD:main`, puis vérifier le déploiement GitHub Pages (check-runs du commit
+  ou `repos/m-igor90/planning-ml/deployments`). La responsable ne veut pas qu'on s'arrête pour demander l'autorisation.

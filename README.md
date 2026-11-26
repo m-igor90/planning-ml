@@ -61,5 +61,5 @@ décembre. Le prévisionnel lui-même n'est pas inclus.
 ## Tests
 
 ```
-node --test tests/
+node --test tests/*.test.js
 ```
