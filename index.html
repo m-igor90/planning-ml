@@ -270,7 +270,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <span class="eyebrow">Démo · V1.1.2 · Néo &amp; Kang</span>
+      <span class="eyebrow">Démo · V1.1.3 · Néo &amp; Kang</span>
       <h1>Planning du service</h1>
     </div>
     <div class="month">
@@ -319,7 +319,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <dialog class="wdlg" id="dlg" aria-labelledby="dlgTitle"></dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="planner.js?v=ml-1.1.2"></script>
+<script src="planner.js?v=ml-1.1.3"></script>
 <script>
 (function () {
   'use strict';
@@ -340,8 +340,11 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function key(y, m) { y = y || state.y; m = m || state.m; return y + '-' + String(m).padStart(2, '0'); }
   function shiftKey(k, n) { var y = +k.slice(0, 4), m = +k.slice(5, 7) + n; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return y + '-' + String(m).padStart(2, '0'); }
-  function staff() { return state.team ? state.team.staff : []; }
-  function units() { return state.team ? state.team.units : []; }
+  function staff() { return (state.team && state.team.staff) || []; }
+  function units() { return (state.team && state.team.units) || []; }
+  /* Équipe au format de ce planning (unités + personnes). La toute première version publiée, copiée de planning-test,
+     enregistrait sous la même clé une équipe sans unités : l'afficher faisait planter la grille et « Équipe & règles ». */
+  function equipeValide(t) { return !!t && Array.isArray(t.units) && Array.isArray(t.staff); }
   function unitName(id) { var u = units().filter(function (x) { return x.id === id; })[0]; return u ? u.nom : id; }
   function person(id) { return staff().filter(function (s) { return s.id === id; })[0]; }
   function dname(s) { return ((s.prenom || '') + ' ' + (s.nom || '')).trim() || s.id; }
@@ -382,15 +385,17 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     return o;
   }
   function boot() {
-    var o = migrer(lsRead());
+    var o = lsRead(), ancien = false;
+    if (o.team && !equipeValide(o.team)) { try { localStorage.setItem(LS + '-ancien', JSON.stringify(o)); } catch (e) { } o = {}; ancien = true; }
+    o = migrer(o);
     function start(team, plans, y, m) {
       state.team = team; state.y = y; state.m = m;
-      if (plans) { var all = lsRead(); all.team = team; all.plans = plans; lsWrite(all); }
+      if (plans) lsWrite({ team: team, plans: plans });
       $('status').className = 'status'; $('statusTxt').textContent = 'Enregistré dans ce navigateur';
       loadMonth();
     }
     if (o.team && (o.team.staff || []).length) { var k = o.last || Object.keys(o.plans || {}).sort().pop(); var now = new Date(); start(o.team, null, k ? +k.slice(0, 4) : now.getFullYear(), k ? +k.slice(5, 7) : now.getMonth() + 1); return; }
-    fetch('exemple.json').then(function (r) { return r.json(); }).then(function (ex) { start(ex.team, ex.plans, 2027, 1); toast('Exemple chargé : janvier 2027'); })
+    fetch('exemple.json').then(function (r) { return r.json(); }).then(function (ex) { start(ex.team, ex.plans, 2027, 1); toast(ancien ? 'Données d’une ancienne version de la démo mises de côté : exemple de janvier 2027 chargé' : 'Exemple chargé : janvier 2027', ancien ? 10000 : undefined); })
       .catch(function () {
         var now = new Date(); start({ units: [], rules: {}, staff: [] }, null, now.getFullYear(), now.getMonth() + 1);
         toast(location.protocol === 'file:' ? 'Exemple non chargé : ouvrez la page depuis le site (https://m-igor90.github.io/planning-ml/)' : 'Exemple non chargé : vérifiez la connexion puis rechargez la page', 15000);
@@ -663,7 +668,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   function toggleIn(arr, v) { arr = (arr || []).slice(); var k = arr.indexOf(v); if (k >= 0) arr.splice(k, 1); else arr.push(v); return arr; }
   function onSettingsChange(e) {
     var t = e.target, R = state.team.rules = state.team.rules || {};
-    if (t.id === 'importFile' && t.files && t.files[0]) { var fr = new FileReader(); fr.onload = function () { try { var o = JSON.parse(fr.result); if (!o.team) throw 0; lsWrite(o); state.team = o.team; loadMonth(); toast('Sauvegarde importée'); } catch (x) { toast('Fichier non reconnu'); } }; fr.readAsText(t.files[0]); t.value = ''; return; }
+    if (t.id === 'importFile' && t.files && t.files[0]) { var fr = new FileReader(); fr.onload = function () { try { var o = JSON.parse(fr.result); if (!o.team || !equipeValide(o.team)) throw 0; lsWrite(o); state.team = o.team; loadMonth(); toast('Sauvegarde importée'); } catch (x) { toast('Fichier non reconnu : ce n’est pas une sauvegarde de ce planning (Néo & Kang)', 8000); } }; fr.readAsText(t.files[0]); t.value = ''; return; }
     if (t.id && t.id.indexOf('r-') === 0) { var v = num(t.value); if (v === null || isNaN(v)) delete R[t.id.slice(2)]; else R[t.id.slice(2)] = v; save(); render(); return; }
     if (t.dataset.need) { var p = t.dataset.need.split('|'), u = units().filter(function (x) { return x.id === p[0]; })[0]; u.besoins = u.besoins || {}; u.besoins[p[1]] = u.besoins[p[1]] || {}; u.besoins[p[1]][p[2]] = Math.max(0, +t.value || 0); save(); render(); return; }
     if (t.dataset.uname) { units().filter(function (x) { return x.id === t.dataset.uname; })[0].nom = t.value.trim() || t.dataset.uname; save(); render(); return; }
