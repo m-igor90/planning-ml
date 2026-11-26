@@ -299,13 +299,37 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   body { background: #fff; font-size: 10px; }
   .toolbar, .palette, #settings, #exportPanel, .cols, #kpi, .status, .month .iconbtn, #confirmZone, .toast { display: none !important; }
   .gridwrap { overflow: visible; border: 0; }
-  .grid td.c { width: 22px; min-width: 22px; height: 22px; } .cell { height: 22px; } .code { font-size: 10px; min-width: 0; padding: 1px; }
+  /* Couleurs : toujours le thème clair, et les fonds imprimés (sinon les N et CA, en lettres blanches, disparaissent). */
+  :root, :root:not([data-theme="light"]), :root[data-theme="dark"] {
+  --bg: #f3f5f8; --surface: #ffffff; --ink: #1a2330; --muted: #5b6878; --line: #d9e0e8; --line-soft: #e9edf2;
+  --accent: #155e75; --accent-ink: #ffffff; --accent-soft: #e2eff3;
+  --we: #eaeef3; --hol: #fbece2; --hol-ink: #a24a17;
+  --ok: #2b7a3d; --warn: #a86500; --err: #c0392b; --err-soft: #fbe5e2;
+  --c1: #4a46b0; --c1-bg: #ebeafc; --m1: #2d7a38; --m1-bg: #e4f3e6; --m5: #0b766e; --m5-bg: #dcf2ef;
+  --d2: #946000; --d2-bg: #fbefd6; --cs: #2a78ba; --t: #2f97cf; --r: #55657a; --f: #8a5a3c; --n: #c0392b;
+  --palm: #2f8a4c; --sand: #f3e7c4; --wish: #7a3e9d; --wish-bg: #f2e8f8; --warn-soft: #fcefd5;
+    color-scheme: light; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* Le mois tient sur une page A4 paysage : lignes basses, nom et fonction sur une ligne. */
+  .wrap { gap: 6px; } .brand h1 { font-size: 18px; } .month h2 { font-size: 18px; } .summary .pill { font-size: 9px; padding: 1px 6px; }
+  .grid td.c, .grid.compact td.c { width: 21px; min-width: 21px; height: 15px; }
+  .cell, .grid.compact .cell { height: 15px; padding: 0; }
+  .grid .code, .grid.compact .code { font-size: 9px; min-width: 0; padding: 1px 2px; box-shadow: none; }
+  .grid .col-name, .grid.compact .col-name { min-width: 0; max-width: none; white-space: nowrap; padding: 0 4px; }
+  .grid .name { display: inline; font-size: 10px; } .grid .meta { font-size: 8px; } .grid tbody tr:not(.cov) .meta::before { content: " · "; }
+  .grid .group th { padding: 2px 4px; font-size: 9px; }
+  .grid .dn th { padding: 1px 0; font-size: 8px; } .grid .dn .num { font-size: 10px; }
+  .grid td.sum, .grid th.sum, .grid.compact td.sum { padding: 0 3px; font-size: 9px; } .grid td.sum .theo, .grid.compact td.sum .theo { display: inline; font-size: 8px; }
+  .grid tr.cov td, .cov button { height: 13px; font-size: 8px; line-height: 13px; } .cov .miss { line-height: 13px; }
+  .grid td.prevd .code, .grid td.nextd .code { font-size: 8px; min-width: 0; }
+  .cell.locked::after { border-top-width: 4px; border-left-width: 4px; }
+  .grid .flag-warn, .cell.wished::before { background: none; border: 0; }
 }
 </style>
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <span class="eyebrow">Démo · V1.3.0 · Néo &amp; Kang</span>
+      <span class="eyebrow">Démo · V1.3.1 · Néo &amp; Kang</span>
       <h1>Planning du service</h1>
     </div>
     <div class="month">
@@ -318,7 +342,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 
   <div class="toolbar" id="toolbar">
     <button class="btn primary" id="genBtn">Générer le planning</button>
-    <button class="btn" id="undoBtn" disabled>Annuler</button>
+    <button class="btn" id="undoBtn" disabled title="Annuler la dernière modification (Ctrl+Z)">Annuler</button>
     <button class="btn" id="clearBtn">Effacer le généré</button>
     <span class="sep"></span>
     <button class="btn" id="printBtn">Imprimer</button>
@@ -356,7 +380,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <dialog class="wdlg" id="dlg" aria-labelledby="dlgTitle"></dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="planner.js?v=ml-1.3.0"></script>
+<script src="planner.js?v=ml-1.3.1"></script>
 <script>
 (function () {
   'use strict';
@@ -944,6 +968,13 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   $('gridwrap').addEventListener('touchmove', function (e) { if (drag.on && drag.actif) e.preventDefault(); }, { passive: false });
   $('gridwrap').addEventListener('contextmenu', function (e) { if (drag.on || e.target.closest('.cell')) e.preventDefault(); });
   $('palette').addEventListener('click', function (e) { var b = e.target.closest('.brush'); if (!b) return; state.brush = b.dataset.brush; renderPalette(); });
+  // Ctrl+Z (Cmd+Z sur Mac) : annuler la dernière modification du planning, sauf pendant la saisie dans un champ
+  document.addEventListener('keydown', function (e) {
+    if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || (e.key || '').toLowerCase() !== 'z') return;
+    var t = e.target; if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+    if ($('dlg').open || !state.undo.length) return;
+    e.preventDefault(); undo(); toast('Modification annulée');
+  });
   $('genBtn').onclick = generate; $('undoBtn').onclick = undo; $('clearBtn').onclick = clearGenerated;
   $('printBtn').onclick = function () { window.print(); };
   $('exportBtn').onclick = exportCsv;
