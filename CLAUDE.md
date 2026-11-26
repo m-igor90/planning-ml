@@ -65,6 +65,18 @@ Avant V1.5.0 : So et Ely (trames fixes de nuit) restaient à 0 h dès février, 
 6. « R » gris au-dessus de Lo du 1er au 3 janvier : signification ?
 7. Postes de 7 h de la légende (6h25, 13h, 20h45) utilisés ? Faut-il distinguer RH et RC ?
 8. Renforts vers les autres services (USC, SAU, maternité, grands enfants) à gérer ?
+9. Congé posé en glissant sur une semaine : CA, FC et B ne sont posés que du lundi au vendredi, hors fériés. Les CA se
+   comptent-ils en jours ouvrés, ou faut-il aussi les poser le samedi ou le week-end ?
+10. Trames fixes (So, Ely) : suivent-elles un cycle (2, 3, 4 semaines ?) à prolonger automatiquement, ou sont-elles
+    refaites chaque mois ? (codé : si la trame du mois n'est pas saisie, la ligne est générée et signalée « à vérifier »)
+11. Agent de nuit : peut-il exceptionnellement faire un jour (J) ou une journée de 7 h (B) ? (codé : jamais)
+12. Rattrapage des heures : au plus 24 h par mois et par personne vers le solde visé ; avec l'exemple, le cumul de
+    l'équipe passe d'environ 1 150 h fin janvier à 700-850 h fin février. Est-ce le bon rythme ?
+13. Vacataire (Ann) : plafond d'heures par mois, jours possibles ? (codé : dernier recours, sans compteur)
+14. Indicateurs : lesquels sont suivis ou demandés (direction des soins, contrôle de gestion) : couverture, heures
+    supplémentaires, recours à la vacataire ou à l'intérim, absentéisme ? Sous quelle forme ?
+15. Jour férié travaillé : compensation (RC ou JF) à poser automatiquement ?
+16. Impression : affichage au mur ? Une page A4 paysage suffit-elle, ou faut-il de l'A3 ?
 
 Particularités volontairement traitées comme préférences : « tous les week-ends travaillés » (conflit avec le
 repos d'un dimanche toutes les 2 semaines).
