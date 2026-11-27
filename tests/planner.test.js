@@ -14,8 +14,10 @@ const ev = (cells, staff = mini) => P.evaluate({ staff, units: U, rules: {}, yea
 const errs = (e, id) => e.issues.filter(i => i.sid === id && i.lvl === 'err').map(i => i.d + ' ' + i.txt);
 
 test('janvier de l’exemple : tous les postes couverts, demandes et trames fixes gardées', () => {
-  const res = P.generate({ ...base, cells: plan.cells, carry, seed: 1 });
-  const e = P.evaluate({ ...base, cells: res.cells, carry });
+  // sans les règles de week-end (un sur deux, non coupés), janvier se couvre entièrement
+  const libre = { ...base, rules: { weEntier: 0, weUnSurDeux: 0 } };
+  const res = P.generate({ ...libre, cells: plan.cells, carry, seed: 1 });
+  const e = P.evaluate({ ...libre, cells: res.cells, carry });
   assert.strictEqual(e.missing, 0);
   const rules = e.issues.filter(i => i.sid && i.lvl === 'err' && !['So', 'Ely'].includes(i.sid));
   assert.deepStrictEqual(rules, [], 'seules les trames fixes peuvent rester en alerte');
@@ -100,4 +102,19 @@ test('nature des repos : 2 RH par semaine dont le dimanche, Rtp des temps partie
   const tot = Object.keys(L.p).length + Object.keys(cells.p).length;
   assert.strictEqual(tot, 28);
   assert.strictEqual(P.reposLabels({ staff, year: 2027, month: 5, holidays: [1, 8, 13, 24], cells: {} }).p[13], 'JF');
+});
+
+test('week-ends : au plus un sur deux (nuit du vendredi comprise), jamais coupés', () => {
+  const st = [{ id: 'a', qualif: 'PDE', unite: 'U', taux: 100 }];
+  const t = c => errs(ev({ a: c }, st), 'a').join(' | ');
+  assert.match(t({ 9: 'J', 10: 'J', 15: 'N', 16: 'RPV' }), /Deux week-ends de suite/, 'nuit du vendredi = week-end');
+  assert.match(t({ 9: 'J' }), /Week-end coupé/);
+  assert.doesNotMatch(t({ 8: 'N', 9: 'N', 10: 'RPV' }), /coupé/, 'nuits du vendredi et du samedi');
+  assert.doesNotMatch(t({ 15: 'N', 16: 'RPV' }), /coupé|de suite/, 'nuit du vendredi seule');
+  assert.strictEqual(t({ 2: 'J', 3: 'J', 16: 'N', 17: 'N', 30: 'J', 31: 'J' }).match(/week-end/gi), null);
+  // janvier de l'exemple : personne d'autre que So (trame fixe) ne travaille deux week-ends de suite
+  const res = P.generate({ ...base, cells: plan.cells, carry, seed: 3 });
+  const e = P.evaluate({ ...base, cells: res.cells, carry });
+  assert.deepStrictEqual(e.issues.filter(i => /de suite/.test(i.txt) && i.sid !== 'So').map(i => i.sid + ' ' + i.d), []);
+  assert.ok(e.missing <= 6, e.missing + ' postes non couverts');
 });

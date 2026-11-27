@@ -59,6 +59,8 @@ prévisionnel (case provisoire) n'est plus généré : le générateur choisit d
 - 48 h au plus sur 7 jours glissants (les heures après minuit comptent pour le jour suivant ; la nuit y compte 12 h
   effectives, les 50 min de compensation restant dans les heures du mois).
 - Un repos de 36 h chaque semaine ; 4 repos sur 2 semaines, dont 2 consécutifs avec un dimanche.
+- Week-ends (nuit du vendredi, samedi, dimanche) : au plus un sur deux travaillé, et jamais coupé (samedi et dimanche
+  ensemble, ou nuits du vendredi et du samedi). Les deux règles se désactivent dans « Équipe & règles ».
 - Particularités par personne : pas de nuit / moins / plus, agent de nuit (32h30, uniquement des nuits), trame fixe
   (si elle n'est pas saisie pour le mois, la ligne est générée et signalée « à vérifier »), vacataire (minimum
   nécessaire), jours travaillés autorisés, jours sans journée ou sans nuit, limite d'un jour de la semaine par mois,

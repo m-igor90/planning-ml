@@ -356,7 +356,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <span class="eyebrow">Démo · V1.6.0 · Néo &amp; Kang</span>
+      <span class="eyebrow">Démo · V1.7.0 · Néo &amp; Kang</span>
       <h1>Planning du service</h1>
     </div>
     <div class="month">
@@ -409,7 +409,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <dialog class="wdlg" id="dlg" aria-labelledby="dlgTitle"></dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="planner.js?v=ml-1.6.0"></script>
+<script src="planner.js?v=ml-1.7.0"></script>
 <script>
 (function () {
   'use strict';
@@ -475,7 +475,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
         Object.keys(map).forEach(function (a) { if (a in c) { c[map[a]] = c[a]; delete c[a]; ch = true; } });
       });
     });
-    // Janvier 2027 de l'exemple : Lo était en prêt au SAU du 1er au 3 (réponse de la responsable, V1.6.0)
+    // Janvier 2027 de l'exemple : Lo était en prêt au SAU du 1er au 3 (réponse de la responsable, V1.7.0)
     var jan = (o.plans || {})['2027-01'], lo = (o.team.staff || []).some(function (x) { return x.id === 'Lo'; });
     if (jan && lo && !(o.migre || {}).loExt) {
       var r = (jan.cells = jan.cells || {}).Lo = jan.cells.Lo || {};
@@ -923,12 +923,14 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     h += '<h3>Unités et besoins par poste</h3><div class="needs-wrap"><table class="needs"><thead><tr><th>Unité</th><th>IDE/PDE jour</th><th>IDE/PDE nuit</th><th>AP jour</th><th>AP nuit</th></tr></thead><tbody>' +
       units().map(function (u) { var b = u.besoins || {}; return '<tr><th><input type="text" style="width:170px;text-align:left" data-uname="' + esc(u.id) + '" value="' + esc(u.nom) + '"></th>' + [['inf', 'J'], ['inf', 'N'], ['ap', 'J'], ['ap', 'N']].map(function (x) { return '<td><input type="number" min="0" max="9" data-need="' + esc(u.id) + '|' + x[0] + '|' + x[1] + '" value="' + (+((b[x[0]] || {})[x[1]]) || 0) + '"></td>'; }).join('') + '</tr>'; }).join('') +
       '</tbody></table></div><p class="note">Nombre de soignantes demandé chaque jour, week-ends compris. Une personne polyvalente peut renforcer une autre unité ; le renfort est préféré aux heures supplémentaires.</p>';
+    var oui = function (id, label, v) { return '<label>' + label + '<select id="' + id + '"><option value="1"' + (+v ? ' selected' : '') + '>Oui</option><option value="0"' + (+v ? '' : ' selected') + '>Non</option></select></label>'; };
     var num = function (id, label, v, step) { return '<label>' + label + '<input type="number" id="' + id + '" step="' + (step || 1) + '" value="' + v + '"></label>'; };
     h += '<h3>Règles</h3><div class="rules">' +
       num('r-hJour', 'Durée d’un jour (h)', R.hJour, 0.25) + num('r-hNuit', 'Valeur d’une nuit (h)', Math.round(R.hNuit * 100) / 100, 0.01) +
       num('r-max7j', 'Maximum sur 7 jours glissants (h)', R.max7j) + num('r-maxSuite12', 'Postes de 12 h d’affilée au plus', R.maxSuite12) +
       num('r-maxSuite', 'Jours travaillés d’affilée au plus', R.maxSuite) + num('r-maxNuitsSuite', 'Nuits d’affilée au plus', R.maxNuitsSuite) +
-      num('r-reposApresNuit', 'Jours de repos après des nuits', R.reposApresNuit) + num('r-rattrapageMax', 'Rattrapage du cumul par mois (h)', R.rattrapageMax) + '</div>' +
+      num('r-reposApresNuit', 'Jours de repos après des nuits', R.reposApresNuit) + num('r-rattrapageMax', 'Rattrapage du cumul par mois (h)', R.rattrapageMax) +
+      oui('r-weEntier', 'Week-ends non coupés (samedi et dimanche ensemble)', R.weEntier) + oui('r-weUnSurDeux', 'Au plus un week-end sur deux (nuit du vendredi comprise)', R.weUnSurDeux) + '</div>' +
       '<p class="note">Toujours vérifiées : repos de veille après une nuit, 12 h de repos entre deux postes, 48 h sur 7 jours glissants (heures après minuit comptées le lendemain), un repos de 36 h par semaine, 4 repos sur 2 semaines dont 2 consécutifs avec un dimanche. Le rattrapage rapproche chaque cumul de son « solde visé » (0 par défaut) de quelques heures par mois.</p>';
     h += '<h3>Jours fériés — ' + MONTHS[state.m - 1] + ' ' + state.y + '</h3><div class="hol-days">' + info.days.map(function (d) { return '<button type="button" data-hol="' + d.d + '" class="' + (d.we ? 'we' : '') + '" aria-pressed="' + d.hol + '">' + d.d + '</button>'; }).join('') + '</div><div><button class="btn" id="holReset">Rétablir les jours fériés (France)</button></div>';
     h += '<h3>Sauvegarde</h3><div class="toolbar"><button class="btn" id="exportJson">Exporter les données (JSON)</button><label class="btn" for="importFile">Importer une sauvegarde…</label><input type="file" id="importFile" accept=".json,application/json" hidden><button class="btn" id="resetEx">Recharger l’exemple</button></div>';

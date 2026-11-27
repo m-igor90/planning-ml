@@ -15,9 +15,9 @@ Tout en français : interface, code, commentaires, messages de commit.
   (« Qui peut venir ? »), `theoretical`, `holidaysDefault` (France). Construction gloutonne puis recuit simulé,
   environ 1 s pour un mois.
 - `exemple.json` : janvier 2027 tiré des documents du service, chargé au premier lancement.
-- `tests/planner.test.js` : `node --test tests/*.test.js` (8 tests). `node tests/bench.js` : mesure du moteur sur 3 mois.
+- `tests/planner.test.js` : `node --test tests/*.test.js` (9 tests). `node tests/bench.js` : mesure du moteur sur 3 mois.
 - Clé localStorage `planning-ml-v1` (distincte de `planning-test`, même origine GitHub Pages).
-- Version affichée dans l'en-tête (`Démo · V1.6.0`) et `?v=ml-1.6.0` sur `planner.js` : les augmenter ensemble.
+- Version affichée dans l'en-tête (`Démo · V1.7.0`) et `?v=ml-1.7.0` sur `planner.js` : les augmenter ensemble.
 
 ## Service modélisé
 
@@ -38,6 +38,11 @@ Tout en français : interface, code, commentaires, messages de commit.
   postes, 48 h sur 7 jours glissants (heures après minuit sur le lendemain ; la nuit y compte 12 h effectives,
   `hNuit48`, les 50 min étant une compensation comptée dans les heures du mois), 36 h de repos par semaine, 4 repos
   sur 2 semaines dont 2 consécutifs avec un dimanche. Renfort entre unités préféré aux heures supplémentaires.
+- Week-ends (règle ajoutée le 27 novembre 2026, désactivables dans « Règles » : `weEntier`, `weUnSurDeux`) : week-end =
+  nuit du vendredi + samedi + dimanche. Au plus un sur deux travaillé (bloquant, à cheval sur deux mois compris) ;
+  jamais coupé : samedi et dimanche ensemble, sauf nuits du vendredi et du samedi ; la nuit du vendredi seule est un
+  week-end entier (alerte, pénalité 4000, non bloquante pendant la recherche). Construction : le dimanche est donné
+  avec le samedi quand c'est possible ; le recuit échange aussi des week-ends entiers entre collègues.
 - Temps théorique : 7 h par jour ouvré au prorata du taux (agent de nuit : 32h30/35), surchargeable par mois.
 - Équilibre des heures : cible = théorique corrigé du cumul TTE (rattrapage 24 h par mois au plus) vers le
   « solde visé » de la personne.
@@ -58,10 +63,13 @@ Tout en français : interface, code, commentaires, messages de commit.
 ## Résultat de référence (janvier 2027)
 
 Prévisionnel du service : 14 postes non couverts, 41 alertes, écart moyen à la cible 39 h.
-Généré : 0 poste non couvert, 0 alerte depuis V1.6.0 (avant : 2 alertes sur les trames fixes, nuit comptée 12h50 dans
-les 48 h), écart moyen 21 h.
-Enchaînement janvier → mars (`node tests/bench.js`, 6 graines, V1.6.0) : 0 poste non couvert, 0 alerte, écart moyen
-à la cible 21, 4 et 6 h, dispersion des cumuls 21, 20 et 16 h, vacataire 0 à 2 h par mois. L'écart de mars passe de
+Généré (V1.7.0, règles de week-end actives) : 2 à 5 postes non couverts, presque tous des nuits de week-end (AP et
+IDE de Kang surtout), 1 alerte (trame de So : nuits des vendredis 1er et 8, deux week-ends de suite), écart moyen 20 h.
+Sans les règles de week-end : 0 poste non couvert, 0 alerte (V1.6.0). Avec un calcul 5 fois plus long : 2 à 3 postes
+non couverts : le reste est structurel (3 AP par week-end, 6 AP hors trame, un week-end sur deux).
+Enchaînement janvier → mars (`node tests/bench.js`, 6 graines, V1.7.0, 120 000 itérations, 2 s par mois) : non couverts
+4 / 0,5 / 0,7, alertes 1,3 / 1,7 / 1,5, écart moyen à la cible 19, 4 et 6 h, dispersion des cumuls 20, 19 et 16 h.
+V1.6.0 (sans règles de week-end) : 0 poste non couvert, 0 alerte, écart 21, 4 et 6 h. L'écart de mars passe de
 2,4 h (V1.4.0) à 6 h car il n'y a plus de B pour compléter les heures : le manque devient du repos (RC, Rtp).
 Avant V1.4.0 : So et Ely (trames fixes de nuit) restaient à 0 h dès février, d'où nuits non couvertes et cumuls qui divergeaient.
 
@@ -78,10 +86,16 @@ Avant V1.4.0 : So et Ely (trames fixes de nuit) restaient à 0 h dès février, 
   arrêts maladie) : `reposLabels`.
 - Renforts vers les autres services : non gérés, confirmé.
 - « Tous les week-ends travaillés » = tous ceux à travailler, soit un week-end sur deux.
+- Règle ajoutée : ne pas couper les week-ends et au plus un week-end sur deux travaillé ; la nuit du vendredi compte
+  comme week-end.
 
 ## Questions en attente pour la responsable
 
 1. Quelle est la 4e équipe ?
+1b. Week-ends : avec la règle « un sur deux, non coupés », janvier laisse 2 à 5 nuits de week-end sans personne (AP et
+    IDE de Kang surtout) : vacataire, renfort, ou exception acceptée (qui, combien de fois) ? La trame de So enchaîne
+    les nuits des vendredis 1er et 8 : à modifier ? Une nuit du vendredi seule (samedi de veille, dimanche libre) est-elle
+    un week-end « entier » ? Samedi de jour puis dimanche de nuit : accepté ?
 2. Nature des repos : 2 RH par semaine (lundi-dimanche), le dimanche d'abord ? Rtp = (100 − taux) % des jours ouvrés
    du mois ? JF sur un férié non travaillé ? RC pour tous les autres repos ? Le RPV reste-t-il RPV sur le planning rendu ?
 3. Repos souhaités (RsA) : sur le planning rendu, faut-il les transformer en RH ou RC ? (codé : RsA reste affiché)

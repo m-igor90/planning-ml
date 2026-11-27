@@ -17,7 +17,7 @@
   function trameActive(s, plan) { return !!s.trameFixe && !(plan && plan.trameAuto && plan.trameAuto[s.id]); }
   var DEFAULT_RULES = {
     hJour: 12, hNuit: 12 + 50 / 60, hNuit48: 12, hB: 7, max7j: 48, maxSuite12: 3, maxSuite: 5, maxNuitsSuite: 2,
-    reposApresNuit: 2, rattrapageMax: 24, iterations: 60000, restarts: 2
+    reposApresNuit: 2, rattrapageMax: 24, weEntier: 1, weUnSurDeux: 1, iterations: 120000, restarts: 2
   };
 
   function rulesOf(r) { var o = {}, k; for (k in DEFAULT_RULES) o[k] = DEFAULT_RULES[k]; for (k in (r || {})) if (r[k] !== undefined && r[k] !== null && r[k] !== '') o[k] = r[k]; return o; }
@@ -189,15 +189,21 @@
       var dd = days[i]; if (!dd.we || weekParity(dd, a.weTravail) !== 0 || a.lock[i - off]) continue;
       if (full[i] !== 'J') issue('warn', i, 'Week-end à travailler de jour (un sur deux)', 900);
     }
-    // Week-ends
-    var weList = [];
-    for (i = off; i < F; i++) if (days[i].dow === 6) weList.push(i);
-    weList.forEach(function (i0) {
-      var sat = work(i0), sun = i0 + 1 < F && work(i0 + 1);
-      if (sat || sun) we++;
-      if (i0 + 1 < F && sat !== sun) pen += 120;
+    // Week-ends (nuit du vendredi, samedi, dimanche) : jamais coupés, au plus un sur deux travaillé.
+    // Travaillé = nuit du vendredi, ou travail le samedi ou le dimanche. Coupé = samedi sans dimanche ou l'inverse,
+    // sauf nuits du vendredi et du samedi ; la nuit du vendredi seule (samedi de veille, dimanche libre) est entière.
+    // « Coupé » n'est pas bloquant pendant la recherche (on pose un jour à la fois) ; deux week-ends de suite le sont.
+    var sams = [];
+    for (i = 0; i < F; i++) if (days[i].dow === 6) sams.push(i);
+    var weTrav = function (x) { return (x > 0 && full[x - 1] === 'N') || work(x) || work(x + 1); };
+    var weEntier = function (x) { return work(x) === work(x + 1) || (x > 0 && full[x - 1] === 'N' && full[x] === 'N'); };
+    sams.forEach(function (x, k) {
+      var dansMois = x + 1 >= off, t = weTrav(x), lieu = Math.max(x, off);
+      if (dansMois && x >= off && t) we++;
+      if (!dansMois) return;
+      if (+R.weEntier && t && x + 1 < F && !weEntier(x)) issue('err', lieu, 'Week-end coupé (samedi et dimanche à travailler ensemble)', 4000);
+      if (+R.weUnSurDeux && k > 0 && t && weTrav(sams[k - 1])) issue('err', lieu, 'Deux week-ends de suite travaillés (au plus un sur deux)', HARD);
     });
-    if (days[off] && days[off].dow === 0 && a.pre.known && work(off) !== work(off - 1)) pen += 120;
     if (s.maxWE !== undefined && s.maxWE !== null && s.maxWE !== '' && we > +s.maxWE) issue('err', off, we + ' week-ends travaillés (max ' + s.maxWE + ')', HARD);
     // Préférences de nuits
     if (s.nuits === 'moins') pen += 70 * nights;
@@ -290,9 +296,10 @@
     P.forEach(function (a, p) {
       if (a.weTravail === null) return;
       for (var i = 0; i < D; i++) {
-        if (a.lock[i] || rows[p][i] || !days[i].we || weekParity(days[i], a.weTravail) !== 0) continue;
-        set(p, i, 'J'); var pen = checkRow(st, a, rows[p], units[p]);
-        if (pen >= HARD) set(p, i, ''); else pPen[p] = pen;
+        if (days[i].dow !== 6 || weekParity(days[i], a.weTravail) !== 0) continue;
+        var we2 = [i, i + 1].filter(function (x) { return x < D && !a.lock[x] && !rows[p][x]; }); if (!we2.length) continue;
+        we2.forEach(function (x) { set(p, x, 'J'); }); var pen = checkRow(st, a, rows[p], units[p]);
+        if (pen >= HARD) we2.forEach(function (x) { set(p, x, ''); }); else pPen[p] = pen;
       }
     });
     // Construction gloutonne : chaque besoin du jour, par la personne la plus en retard d'heures
@@ -302,18 +309,28 @@
         var need = needOf(st, u.id, G, Pc, days[i]);
         for (var n = 0; n < need; n++) {
           var cov = coverDay(st, rows, units, i)[u.id + '|' + G + '|' + Pc] || 0; if (cov >= need) return;
-          var bestP = -1, bestS = Infinity;
+          var bestP = -1, bestS = Infinity, bestDim = false;
+          // Samedi : on essaie de donner aussi le dimanche (même poste) à la même personne, pour ne pas couper le week-end
+          var dim = days[i].dow === 6 && i + 1 < D && (coverDay(st, rows, units, i + 1)[u.id + '|' + G + '|' + Pc] || 0) < needOf(st, u.id, G, Pc, days[i + 1]);
           P.forEach(function (a, p) {
             if (a.g !== G || a.lock[i] || rows[p][i]) return;
             if (a.home !== u.id && a.poly.indexOf(u.id) < 0) return;
-            set(p, i, Pc + (a.home !== u.id ? '@' + u.id : ''));
-            var pen = checkRow(st, a, rows[p], units[p]);
-            set(p, i, '');
-            if (pen >= HARD) return;
-            var sc = pen - pPen[p] + (a.s.vacataire ? 400 : 0) + rand() * 20;
-            if (sc < bestS) { bestS = sc; bestP = p; }
+            var v = Pc + (a.home !== u.id ? '@' + u.id : ''), avec = dim && !a.lock[i + 1] && !rows[p][i + 1];
+            [avec, false].forEach(function (d2) {
+              if (d2 === false && avec && bestP === p && bestDim) return;
+              set(p, i, v); if (d2) set(p, i + 1, v);
+              var pen = checkRow(st, a, rows[p], units[p]);
+              set(p, i, ''); if (d2) set(p, i + 1, '');
+              if (pen >= HARD) return;
+              var sc = pen - pPen[p] + (a.s.vacataire ? 400 : 0) + rand() * 20 - (d2 ? 30 : 0);
+              if (sc < bestS) { bestS = sc; bestP = p; bestDim = d2; }
+            });
           });
-          if (bestP >= 0) { set(bestP, i, Pc + (P[bestP].home !== u.id ? '@' + u.id : '')); pPen[bestP] = checkRow(st, P[bestP], rows[bestP], units[bestP]); }
+          if (bestP >= 0) {
+            var vb = Pc + (P[bestP].home !== u.id ? '@' + u.id : '');
+            set(bestP, i, vb); if (bestDim) set(bestP, i + 1, vb);
+            pPen[bestP] = checkRow(st, P[bestP], rows[bestP], units[bestP]);
+          }
         }
       }); }); });
     }
@@ -330,6 +347,16 @@
       if (mv < 0.55) {
         var dom = domain(a, i), v = dom[Math.floor(rand() * dom.length)]; if (v === get(p, i)) continue;
         undo.push([p, i, get(p, i)]); set(p, i, v); touchedP[p] = 1; touchedD[i] = 1;
+      } else if (mv < 0.62) { // échanger un week-end entier (vendredi, samedi, dimanche) avec une collègue du même groupe
+        var q2 = Math.floor(rand() * P.length), b2 = P[q2]; if (q2 === p || b2.g !== a.g) continue;
+        var sa = i; while (sa < D && days[sa].dow !== 6) sa++; if (sa >= D) continue;
+        var jw = [sa - 1, sa, sa + 1].filter(function (x) { return x >= 0 && x < D; });
+        if (jw.some(function (x) { return a.lock[x] || b2.lock[x]; })) continue;
+        var ad = function (v, b) { var k = v.indexOf('@'); if (k < 0) return v && b.home !== a.home && v !== 'B' ? v + '@' + a.home : v; var U = v.slice(k + 1); return U === b.home ? v.slice(0, k) : v; };
+        var va = jw.map(function (x) { return get(p, x); }), vb = jw.map(function (x) { return get(q2, x); });
+        if (va.join() === vb.join()) continue;
+        jw.forEach(function (x, n) { undo.push([p, x, va[n]], [q2, x, vb[n]]); set(p, x, ad(vb[n], a)); set(q2, x, ad(va[n], b2)); touchedD[x] = 1; });
+        touchedP[p] = 1; touchedP[q2] = 1;
       } else if (mv < 0.85) { // échange avec une collègue du même groupe le même jour
         var q = Math.floor(rand() * P.length); if (q === p || P[q].g !== a.g || P[q].lock[i]) continue;
         var vp = get(p, i), vq = get(q, i); if (vp === vq) continue;
@@ -365,9 +392,9 @@
         if (c === 'N') n++; if (c === 'J') j++; if (c === 'B') b++;
         if (isWork(c) && units[p][i] && units[p][i] !== a.home) renf++;
         if (isWork(c) && st.info.days[i].dow === 0) sun++;
-        if (st.info.days[i].dow === 6 && (isWork(c) || (i + 1 < D && isWork(rows[p][i + 1])))) we++;
+        if (st.info.days[i].dow === 6 && (isWork(c) || (i + 1 < D && isWork(rows[p][i + 1])) || (i > 0 ? rows[p][i - 1] : a.pre.codes[a.pre.codes.length - 1]) === 'N')) we++;
       }
-      if (st.info.days[0].dow === 0 && isWork(rows[p][0]) && !(a.pre.known && isWork(a.pre.codes[a.pre.codes.length - 1]))) we++;
+      if (st.info.days[0].dow === 0 && isWork(rows[p][0]) && !(a.pre.known && (isWork(a.pre.codes[a.pre.codes.length - 1]) || a.pre.codes[a.pre.codes.length - 2] === 'N'))) we++;
       return { id: a.s.id, hours: Math.round(hrs * 100) / 100, theo: a.theo, target: a.target, balance: Math.round((hrs - a.theo) * 100) / 100,
         nights: n, jours: j, b: b, we: we, sundays: sun, renforts: renf };
     });
