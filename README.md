@@ -38,10 +38,15 @@ partagées entre appareils : utiliser l'export JSON pour changer d'appareil.
 | --- | --- | --- |
 | J | Jour 7h–19h | 12 h |
 | N | Nuit 19h–7h | 12h50 (réglable) |
-| B | Journée de 7 h en semaine (équivalent B100, au prorata du taux) | 7 h × taux |
 | CA | Congé annuel | 7 h × taux |
 | FC | Formation | 7 h |
-| RsA, Rtp, RH, RC, RPV, JF | Repos | 0 |
+| RH, RC, Rtp, JF, RPV | Repos hebdomadaire, compensateur, temps partiel, férié, de veille | 0 |
+| RsA | Repos souhaité (demande) | 0 |
+| Ext | En prêt dans un autre service (heures comptées là-bas) | 0 |
+
+Les jours de repos reçoivent automatiquement leur code (en petit gris) : 2 RH par semaine, le dimanche et le samedi
+d'abord ; les Rtp des temps partiels ; JF les jours fériés ; RC le reste. Un code posé à la main est gardé. Le B100 du
+prévisionnel (case provisoire) n'est plus généré : le générateur choisit directement jour, nuit ou repos.
 
 `J@KAN` : jour en renfort dans l'unité Kang (affiché « J » avec l'initiale de l'unité).
 
@@ -51,12 +56,13 @@ partagées entre appareils : utiliser l'export JSON pour changer d'appareil.
   et 1 AP de jour et de nuit. Le renfort d'une personne polyvalente est préféré aux heures supplémentaires.
 - Repos de veille après une nuit, puis un repos (2 jours au total, réglable par personne) ; 12 h entre deux postes ;
   au plus 2 nuits, 3 postes de 12 h et 5 jours de travail d'affilée (réglables).
-- 48 h au plus sur 7 jours glissants (les heures après minuit comptent pour le jour suivant).
+- 48 h au plus sur 7 jours glissants (les heures après minuit comptent pour le jour suivant ; la nuit y compte 12 h
+  effectives, les 50 min de compensation restant dans les heures du mois).
 - Un repos de 36 h chaque semaine ; 4 repos sur 2 semaines, dont 2 consécutifs avec un dimanche.
 - Particularités par personne : pas de nuit / moins / plus, agent de nuit (32h30, uniquement des nuits), trame fixe
   (si elle n'est pas saisie pour le mois, la ligne est générée et signalée « à vérifier »), vacataire (minimum
   nécessaire), jours travaillés autorisés, jours sans journée ou sans nuit, limite d'un jour de la semaine par mois,
-  pas 2 postes d'affilée, alternance des week-ends, week-ends par mois au plus, priorité au temps théorique.
+  pas 2 postes d'affilée, alternance des week-ends (garde alternée), un week-end sur deux travaillé, week-ends par mois au plus, priorité au temps théorique.
 - Équilibre des heures : chacune vise son temps théorique, corrigé de son cumul TTE de quelques heures par mois
   (24 h au plus par défaut) pour rapprocher les compteurs de leur « solde visé ».
 - Continuité : la fin du mois précédent (14 jours) est prise en compte pour les nuits, les repos et les 48 h.

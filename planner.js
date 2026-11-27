@@ -9,14 +9,14 @@
   'use strict';
 
   var POSTES = ['J', 'N'];
-  var WORK = { J: 1, N: 1, B: 1, FC: 1 };
+  var WORK = { J: 1, N: 1, B: 1, FC: 1, Ext: 1 }; // Ext : en prêt dans un autre service (heures comptées là-bas)
   var GROUPS = { IDE: 'inf', PDE: 'inf', AP: 'ap', CADRE: 'cadre' };
   var GEN = ['', 'J', 'N', 'B', 'RPV', 'RH', 'RC']; // codes que le générateur peut remplacer
   /* Trame fixe : la ligne n'est jamais modifiée, sauf si la trame n'a pas été saisie pour le mois (plan.trameAuto[id]) :
      la ligne est alors générée comme les autres, et l'interface demande de la vérifier. */
   function trameActive(s, plan) { return !!s.trameFixe && !(plan && plan.trameAuto && plan.trameAuto[s.id]); }
   var DEFAULT_RULES = {
-    hJour: 12, hNuit: 12 + 50 / 60, hB: 7, max7j: 48, maxSuite12: 3, maxSuite: 5, maxNuitsSuite: 2,
+    hJour: 12, hNuit: 12 + 50 / 60, hNuit48: 12, hB: 7, max7j: 48, maxSuite12: 3, maxSuite: 5, maxNuitsSuite: 2,
     reposApresNuit: 2, rattrapageMax: 24, iterations: 60000, restarts: 2
   };
 
@@ -89,11 +89,27 @@
       var theo = theoretical(s, info, plan), cum = +carry[s.id] || 0, aim = +s.soldeVise || 0;
       var catchUp = Math.max(-R.rattrapageMax, Math.min(R.rattrapageMax, cum - aim));
       var pre = prevTail(s, opts.prev);
+      var weT = s.weekendsTous ? weTravailRef(s, pre, info, src, plan) : null;
       return { s: s, g: groupOf(s), home: s.unite, poly: s.polyvalence || [], row: row, unit: unit, lock: lock, theo: theo,
         target: s.vacataire ? 0 : Math.max(0, theo - catchUp), pre: pre, all: pre.days.concat(info.days),
-        rest: +s.reposApresNuit > 0 ? +s.reposApresNuit : R.reposApresNuit, wH: s.prioriteHeures ? 6 : 2 };
+        rest: +s.reposApresNuit > 0 ? +s.reposApresNuit : R.reposApresNuit, wH: s.prioriteHeures ? 6 : 2, weTravail: weT };
     });
     return { R: R, info: info, units: units, people: people };
+  }
+
+  /* Week-ends travaillés un sur deux : samedi de référence (jour absolu). Réglage de la fiche (weTravailRef), sinon le
+     dernier week-end travaillé de jour à la fin du mois précédent, sinon la parité qui heurte le moins les congés et
+     demandes déjà posés sur les week-ends du mois. Ne dépend que de données fixes : génération et contrôle concordent. */
+  function weTravailRef(s, pre, info, src, plan) {
+    if (s.weTravailRef && /^\d{4}-\d{2}-\d{2}$/.test(s.weTravailRef)) { var p = s.weTravailRef.split('-'); return absDay(+p[0], +p[1], +p[2]); }
+    for (var i = pre.days.length - 2; i >= 0; i--) if (pre.days[i].dow === 6 && pre.codes[i] === 'J' && pre.codes[i + 1] === 'J') return pre.days[i].abs;
+    var sat = info.days.filter(function (d) { return d.dow === 6; })[0]; if (!sat) return null;
+    var cout = [0, 0];
+    info.days.forEach(function (d) {
+      if (!d.we) return; var pc = parseCell(src[d.d]); if (!pc.c || GEN.indexOf(pc.c) >= 0) return; // seules les cases fixes comptent
+      var w = weekParity(d, sat.abs); if (pc.c !== 'J') cout[w]++; else cout[1 - w]++;
+    });
+    return cout[1] < cout[0] ? sat.abs + 7 : sat.abs;
   }
 
   /* ---------- règles d'une personne ----------
@@ -127,7 +143,8 @@
     var h = new Array(F + 1).fill(0);
     for (i = 0; i < F; i++) {
       var c = full[i];
-      if (c === 'N') { h[i] += 5; h[i + 1] += R.hNuit - 5; } else if (isWork(c)) h[i] += hoursOf(c, s, R);
+      // La nuit compte 12 h effectives pour les 48 h (les 50 min de plus sont une compensation, comptée dans les heures du mois)
+      if (c === 'N') { h[i] += 5; h[i + 1] += R.hNuit48 - 5; } else if (isWork(c)) h[i] += hoursOf(c, s, R);
     }
     for (i = Math.max(off, 6); i < F; i++) {
       var sum = 0; for (k = i - 6; k <= i; k++) sum += h[k];
@@ -165,6 +182,12 @@
         if (s.pasDeuxPostes === 'jour' ? both : !(d.we && days[i - 1].we)) issue('err', i, s.pasDeuxPostes === 'jour' ? 'Deux postes de jour d’affilée' : 'Deux postes d’affilée hors week-end', HARD);
       }
       if (s.weRef && (d.we) && weekParity(d, s.weRef) !== 0 && !a.lock[di]) issue('err', i, 'Week-end de garde des enfants (alternance)', HARD);
+      if (a.weTravail !== null && d.we && weekParity(d, a.weTravail) !== 0 && !a.lock[di]) issue('warn', i, 'Week-end de repos (un week-end sur deux travaillé)', 900);
+    }
+    // « Tous les week-ends travaillés » = un week-end sur deux, samedi et dimanche de jour
+    if (a.weTravail !== null) for (i = off; i < F; i++) {
+      var dd = days[i]; if (!dd.we || weekParity(dd, a.weTravail) !== 0 || a.lock[i - off]) continue;
+      if (full[i] !== 'J') issue('warn', i, 'Week-end à travailler de jour (un sur deux)', 900);
     }
     // Week-ends
     var weList = [];
@@ -173,7 +196,6 @@
       var sat = work(i0), sun = i0 + 1 < F && work(i0 + 1);
       if (sat || sun) we++;
       if (i0 + 1 < F && sat !== sun) pen += 120;
-      if (s.weekendsTous && !(full[i0] === 'J' && full[i0 + 1] === 'J') && i0 + 1 < F) issue('warn', i0, 'Week-end non travaillé de jour (préférence)', 300);
     });
     if (days[off] && days[off].dow === 0 && a.pre.known && work(off) !== work(off - 1)) pen += 120;
     if (s.maxWE !== undefined && s.maxWE !== null && s.maxWE !== '' && we > +s.maxWE) issue('err', off, we + ' week-ends travaillés (max ' + s.maxWE + ')', HARD);
@@ -193,7 +215,7 @@
     return pen;
   }
   function weekParity(d, ref) {
-    var p = String(ref).split('-'), r = absDay(+p[0], +p[1], +p[2]);
+    var p = String(ref).split('-'), r = typeof ref === 'number' ? ref : absDay(+p[0], +p[1], +p[2]);
     var w = Math.floor((d.abs - (d.dow === 0 ? 1 : 0) - r) / 7); // le dimanche appartient au week-end de la veille
     return ((w % 2) + 2) % 2;
   }
@@ -255,8 +277,8 @@
     var pPen = P.map(function (a, p) { return checkRow(st, a, rows[p], units[p]); });
     var dPen = days.map(function (d, i) { return coverPen(st, rows, units, i); });
     function domain(a, i) {
+      // Pas de B : le « B100 » du prévisionnel n'est qu'une case provisoire, transformée en jour, nuit ou repos
       var nuit = !!a.s.agentNuit, o = nuit ? ['', 'N'] : ['', 'J', 'N'];
-      if (!nuit && !days[i].we && !days[i].hol) o.push('B');
       a.poly.forEach(function (U) { if (st.units.some(function (u) { return u.id === U; })) { if (!nuit) o.push('J@' + U); o.push('N@' + U); } });
       return o;
     }
@@ -264,6 +286,15 @@
     function get(p, i) { return rows[p][i] + (units[p][i] ? '@' + units[p][i] : ''); }
     var total = pPen.reduce(function (x, y) { return x + y; }, 0) + dPen.reduce(function (x, y) { return x + y; }, 0);
 
+    // Week-ends à travailler (un sur deux) posés d'abord : le reste du planning s'organise autour
+    P.forEach(function (a, p) {
+      if (a.weTravail === null) return;
+      for (var i = 0; i < D; i++) {
+        if (a.lock[i] || rows[p][i] || !days[i].we || weekParity(days[i], a.weTravail) !== 0) continue;
+        set(p, i, 'J'); var pen = checkRow(st, a, rows[p], units[p]);
+        if (pen >= HARD) set(p, i, ''); else pPen[p] = pen;
+      }
+    });
     // Construction gloutonne : chaque besoin du jour, par la personne la plus en retard d'heures
     var hrs = P.map(function () { return 0; });
     for (var i = 0; i < D; i++) {
@@ -286,15 +317,6 @@
         }
       }); }); });
     }
-    // Compléter les heures avec des journées de 7 h en semaine
-    P.forEach(function (a, p) {
-      if (a.s.vacataire) return;
-      for (var t = 0; t < D; t++) {
-        var i = Math.floor(rand() * D); if (a.lock[i] || rows[p][i] || days[i].we || days[i].hol) continue;
-        set(p, i, 'B'); var pen = checkRow(st, a, rows[p], units[p]);
-        if (pen < pPen[p]) pPen[p] = pen; else set(p, i, '');
-      }
-    });
     dPen = days.map(function (d, i) { return coverPen(st, rows, units, i); });
     total = pPen.reduce(function (x, y) { return x + y; }, 0) + dPen.reduce(function (x, y) { return x + y; }, 0);
 
@@ -364,6 +386,74 @@
     return { info: st.info, people: people, cover: cover, missing: missing, excess: excess, issues: issues };
   }
 
+  /* ---------- nature des repos ----------
+     Chaque jour non travaillé du planning rendu doit porter son code : RH (repos hebdomadaire), Rtp (temps partiel),
+     JF (férié), RC (repos compensateur) ; le lendemain d'une nuit reste RPV. Calculé à partir du planning (rien n'est
+     enregistré) : les codes posés à la main sont gardés et comptés.
+     - RH : 2 par semaine du lundi au dimanche, de préférence le dimanche puis le samedi, et accolés à un autre repos ;
+       semaine coupée par un mois non planifié : au prorata des jours connus.
+     - Rtp : temps partiel, (100 − taux) % des jours ouvrés du mois, en semaine de préférence.
+     - JF : jour férié non travaillé. RC : tous les autres jours de repos.
+     Renvoie { id: { jour: code } } pour les jours vides du mois. Vacataire : rien. */
+  function reposLabels(opts) {
+    var info = monthInfo(opts.year, opts.month, opts.holidays), cells = opts.cells || {}, out = {};
+    var bord = function (o) { return o && o.cells ? { info: monthInfo(o.year, o.month, o.holidays), cells: o.cells } : null; };
+    var pv = bord(opts.prev), nx = bord(opts.next);
+    var d0 = info.days[0], dN = info.days[info.D - 1];
+    var avant = (d0.dow + 6) % 7, apres = (7 - dN.dow) % 7; // jours de la semaine coupée, avant et après le mois
+    (opts.staff || []).forEach(function (s) {
+      if (s.vacataire || groupOf(s) === 'cadre') return;
+      var E = [], i, k;
+      var ajoute = function (m, d, src, connu, cur) { E.push({ d: d, cur: cur, connu: connu, c: connu ? parseCell((src || {})[d.d]).c : '' }); };
+      for (i = avant; i >= 1; i--) { var dp = pv ? pv.info.days[pv.info.D - i] : null; ajoute(null, dp || { d: 0, dow: (d0.dow - i + 7) % 7, we: false, hol: false }, pv ? pv.cells[s.id] : null, !!pv, false); }
+      info.days.forEach(function (d) { ajoute(null, d, cells[s.id], true, true); });
+      for (i = 0; i < apres; i++) { var dn = nx ? nx.info.days[i] : null; ajoute(null, dn || { d: 0, dow: (dN.dow + 1 + i) % 7, we: false, hol: false }, nx ? nx.cells[s.id] : null, !!nx, false); }
+      var lab = E.map(function (e) { return e.c; });
+      var libre = function (x) { return E[x].connu && lab[x] === '' && !(x > 0 && lab[x - 1] === 'N') && !(x === 0 && !E[x].cur && false); };
+      var repos = function (x) { return x >= 0 && x < E.length && lab[x] !== '' && !isWork(lab[x]) || (x >= 0 && x < E.length && lab[x] === ''); };
+      // RH, semaine par semaine
+      for (var w = 0; w < E.length; w += 7) {
+        var idx = []; for (i = w; i < w + 7; i++) idx.push(i);
+        var connus = idx.filter(function (x) { return E[x].connu; }).length, deja = idx.filter(function (x) { return lab[x] === 'RH'; }).length;
+        var besoin = (connus === 7 ? 2 : Math.round(2 * connus / 7)) - deja;
+        while (besoin > 0) {
+          var best = -1, bs = -1;
+          idx.forEach(function (x) {
+            if (!libre(x)) return;
+            var sc = (E[x].d.dow === 0 ? 100 : E[x].d.dow === 6 ? 60 : 0) + (lab[x - 1] === 'RH' || lab[x + 1] === 'RH' ? 30 : 0) + (repos(x - 1) && repos(x + 1) ? 5 : 0) - (E[x].d.hol ? 3 : 0);
+            if (sc > bs) { bs = sc; best = x; }
+          });
+          if (best < 0) break; lab[best] = 'RH'; besoin--;
+        }
+      }
+      // Rtp, sur le mois
+      var off = avant, taux = +s.taux || 100;
+      if (taux < 100) {
+        var dejaR = 0; for (i = off; i < off + info.D; i++) if (lab[i] === 'Rtp') dejaR++;
+        var bes = Math.round(info.workingDays * (100 - taux) / 100) - dejaR;
+        while (bes > 0) {
+          var b2 = -1, s2 = -1;
+          for (i = off; i < off + info.D; i++) {
+            if (!libre(i)) continue;
+            var sc2 = (!E[i].d.we && !E[i].d.hol ? 50 : 0) + (repos(i - 1) || repos(i + 1) ? 10 : 0);
+            if (sc2 > s2) { s2 = sc2; b2 = i; }
+          }
+          if (b2 < 0) break; lab[b2] = 'Rtp'; bes--;
+        }
+      }
+      // JF puis RC
+      var o = {};
+      for (i = off; i < off + info.D; i++) {
+        if (E[i].c !== '') continue;
+        if (i > 0 && lab[i - 1] === 'N') continue; // lendemain de nuit : repos de veille
+        if (lab[i] === '') lab[i] = E[i].d.hol ? 'JF' : 'RC';
+        o[E[i].d.d] = lab[i];
+      }
+      out[s.id] = o;
+    });
+    return out;
+  }
+
   /* Qui peut prendre ce poste ? Liste les personnes possibles, de la plus en retard d'heures à la plus en avance. */
   function candidates(opts, day, poste, U, G) {
     var st = buildState(opts), out = [], di = day - 1;
@@ -386,7 +476,7 @@
 
   var api = { POSTES: POSTES, DEFAULT_RULES: DEFAULT_RULES, rulesOf: rulesOf, parseCell: parseCell, isWork: isWork, groupOf: groupOf,
     holidaysDefault: holidaysDefault, trameActive: trameActive, monthInfo: monthInfo, theoretical: theoretical, hoursOf: hoursOf,
-    generate: generate, evaluate: evaluate, candidates: candidates };
+    generate: generate, evaluate: evaluate, candidates: candidates, reposLabels: reposLabels };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Planner = api;
 })(this);

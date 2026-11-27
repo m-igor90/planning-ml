@@ -295,6 +295,8 @@ textarea.csv { width: 100%; min-height: 140px; font-family: ui-monospace, Menlo,
 .code.RsA { color: var(--wish); background: var(--wish-bg); font-size: 12px; }
 .code.FC { color: #fff; background: var(--f); }
 .code.Rtp, .code.RH, .code.RC, .code.JF { color: var(--muted); background: var(--line-soft); font-size: 12px; }
+.code.Ext { color: var(--muted); background: transparent; box-shadow: inset 0 0 0 1.5px var(--line); font-size: 12px; }
+.cell.auto .code { background: transparent; box-shadow: none; font-weight: 600; }
 .code.RPV { color: var(--muted); font-size: 11px; font-weight: 600; }
 .code sup { font-size: 9px; margin-left: 1px; vertical-align: 4px; }
 .code.ren { box-shadow: inset 0 0 0 2px var(--warn); }
@@ -354,7 +356,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <span class="eyebrow">Démo · V1.5.1 · Néo &amp; Kang</span>
+      <span class="eyebrow">Démo · V1.6.0 · Néo &amp; Kang</span>
       <h1>Planning du service</h1>
     </div>
     <div class="month">
@@ -399,6 +401,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     <section class="panel">
       <h3>Légende</h3>
       <div class="legend" id="legend"></div>
+      <p class="note"><strong>Jours de repos</strong> (en petit gris) : code attribué automatiquement, 2 RH par semaine (le dimanche et le samedi d’abord), les Rtp des temps partiels, JF les jours fériés, RC le reste. Un code posé à la main est gardé.</p>
       <p class="note">Touchez un chiffre des lignes « Jour » ou « Nuit » pour voir qui peut prendre le poste. Le générateur garde les cases saisies à la main (coin bleu), les congés, formations et repos souhaités, et les trames fixes.</p>
     </section>
   </div>
@@ -406,7 +409,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 <dialog class="wdlg" id="dlg" aria-labelledby="dlgTitle"></dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="planner.js?v=ml-1.5.1"></script>
+<script src="planner.js?v=ml-1.6.0"></script>
 <script>
 (function () {
   'use strict';
@@ -416,8 +419,8 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   var DOW2 = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
   var DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
   var WEEK = [1, 2, 3, 4, 5, 6, 0];
-  var CODES = { J: 'Jour 7h–19h (12 h)', N: 'Nuit 19h–7h (12h50)', B: 'Journée de 7 h (semaine)', CA: 'Congé annuel', RsA: 'Repos souhaité', FC: 'Formation (7 h)', Rtp: 'Repos temps partiel', RH: 'Repos hebdomadaire', RC: 'Repos compensateur', RPV: 'Repos de veille', JF: 'Jour férié' };
-  var BRUSHES = [['J', 'N', 'B'], ['CA', 'RsA', 'FC', 'Rtp', 'RH'], ['pin', 'erase']];
+  var CODES = { J: 'Jour 7h–19h (12 h)', N: 'Nuit 19h–7h (12h50)', B: 'Case provisoire du prévisionnel (B100), plus générée', CA: 'Congé annuel', RsA: 'Repos souhaité', FC: 'Formation (7 h)', Rtp: 'Repos temps partiel', RH: 'Repos hebdomadaire', RC: 'Repos compensateur', RPV: 'Repos de veille', JF: 'Jour férié non travaillé', Ext: 'En prêt dans un autre service' };
+  var BRUSHES = [['J', 'N'], ['CA', 'RsA', 'FC'], ['RH', 'RC', 'Rtp'], ['pin', 'erase']];
   var QUALIFS = [['PDE', 'Infirmière puéricultrice (PDE)'], ['IDE', 'Infirmière (IDE)'], ['AP', 'Auxiliaire de puériculture (AP)']];
   var GROUPS = [['inf', 'IDE / PDE'], ['ap', 'AP']];
 
@@ -472,6 +475,13 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
         Object.keys(map).forEach(function (a) { if (a in c) { c[map[a]] = c[a]; delete c[a]; ch = true; } });
       });
     });
+    // Janvier 2027 de l'exemple : Lo était en prêt au SAU du 1er au 3 (réponse de la responsable, V1.6.0)
+    var jan = (o.plans || {})['2027-01'], lo = (o.team.staff || []).some(function (x) { return x.id === 'Lo'; });
+    if (jan && lo && !(o.migre || {}).loExt) {
+      var r = (jan.cells = jan.cells || {}).Lo = jan.cells.Lo || {};
+      ['1', '2', '3'].forEach(function (d) { var pc = P.parseCell(r[d]); if (!pc.l && ['', 'J', 'N', 'B', 'RPV', 'RH', 'RC'].indexOf(pc.c) >= 0) r[d] = 'Ext'; });
+      (o.migre = o.migre || {}).loExt = true; ch = true;
+    }
     if (ch) lsWrite(o);
     return o;
   }
@@ -494,6 +504,13 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   }
 
   /* ---------- soldes et continuité ---------- */
+  function nextForLabels() {
+    var p = state.nextPlan, k = shiftKey(key(), 1);
+    var any = p && Object.keys(p.cells || {}).some(function (s) { return Object.keys(p.cells[s]).length; });
+    return any ? { year: +k.slice(0, 4), month: +k.slice(5, 7), holidays: p.holidays || P.holidaysDefault(+k.slice(0, 4), +k.slice(5, 7)), cells: p.cells } : null;
+  }
+  /* Nature des jours de repos (RH, RC, Rtp, JF), calculée et non enregistrée : voir Planner.reposLabels. */
+  function repos() { return P.reposLabels(baseOpts({ next: nextForLabels() })); }
   function prevForEngine() {
     var p = state.prevPlan, k = shiftKey(key(), -1);
     var any = p && Object.keys(p.cells || {}).some(function (s) { return Object.keys(p.cells[s]).length; });
@@ -527,7 +544,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
   function undo() { if (!state.undo.length) return; state.plan = state.undo.pop(); save(); render(); }
   /* Codes posés sur des jours ouvrés seulement quand on glisse sur plusieurs jours (congé d'une semaine,
      formation) : un samedi, un dimanche ou un férié pris dans la plage reste tel quel. */
-  var OUVRES = { CA: 1, FC: 1, B: 1 };
+  var OUVRES = { CA: 1, FC: 1, B: 1, Rtp: 1 };
   function paint(sid, d) { paintRange(sid, d, d); }
   function paintRange(sid, d1, d2) {
     var a = Math.min(+d1, +d2), z = Math.max(+d1, +d2), b = state.brush, s = person(sid);
@@ -673,6 +690,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     var pdays = prev.info.days.slice(-3), ndays = next.info.days.slice(0, 3);
     var bcls = function (d, i, n, k) { return k + (k === 'prevd' ? (i === n - 1 ? ' lastp' : '') : (i === 0 ? ' firstn' : '')) + (d.hol ? ' hol' : d.we ? ' we' : ''); };
     var people = {}; ev.people.forEach(function (p) { people[p.id] = p; });
+    var lab = repos();
     var err = {}; ev.issues.forEach(function (i) { if (i.sid) err[i.sid + ':' + i.d] = i.lvl; });
     var carry = {}; staff().forEach(function (s) { carry[s.id] = carryIn(s); });
     var cls = function (d) { return (d.hol ? ' hol' : d.we ? ' we' : ''); };
@@ -696,9 +714,10 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
           pdays.forEach(bordure(prev, 'prevd'));
           info.days.forEach(function (d) {
             var pc = P.parseCell(src[d.d]), flag = err[s.id + ':' + d.d];
-            var c = 'cell' + (pc.l || P.trameActive(s, state.plan) ? ' locked' : '') + (flag === 'err' ? ' flag' : flag === 'warn' ? ' flag-warn' : '');
-            var label = dname(s) + ', ' + d.d + ' : ' + (pc.c ? (CODES[pc.c] || pc.c) + (pc.u && pc.u !== s.unite ? ' en renfort ' + unitName(pc.u) : '') : 'repos');
-            h += '<td class="c' + cls(d) + '"><button class="' + c + '" data-sid="' + esc(s.id) + '" data-d="' + d.d + '" aria-label="' + esc(label) + '" title="' + esc(label) + '">' + (pc.c ? codeHtml(pc.c, pc.u, s.unite) : '<span class="rest">·</span>') + '</button></td>';
+            var auto = !pc.c && lab[s.id] && lab[s.id][d.d];
+            var c = 'cell' + (pc.l || P.trameActive(s, state.plan) ? ' locked' : '') + (auto ? ' auto' : '') + (flag === 'err' ? ' flag' : flag === 'warn' ? ' flag-warn' : '');
+            var label = dname(s) + ', ' + d.d + ' : ' + (pc.c ? (CODES[pc.c] || pc.c) + (pc.u && pc.u !== s.unite ? ' en renfort ' + unitName(pc.u) : '') : auto ? CODES[auto] + ' (attribué automatiquement)' : 'repos');
+            h += '<td class="c' + cls(d) + '"><button class="' + c + '" data-sid="' + esc(s.id) + '" data-d="' + d.d + '" aria-label="' + esc(label) + '" title="' + esc(label) + '">' + (pc.c ? codeHtml(pc.c, pc.u, s.unite) : auto ? codeHtml(auto) : '<span class="rest">·</span>') + '</button></td>';
           });
           ndays.forEach(bordure(next, 'nextd'));
           if (!p) { h += '<td colspan="5"></td></tr>'; return; }
@@ -886,8 +905,8 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     }).join('') + (ev.issues.length > 200 ? '<li class="info"><span class="tag">…</span><span>' + (ev.issues.length - 200) + ' autres</span></li>' : '') : '<li class="info"><span class="tag">✓</span><span>Aucune alerte.</span></li>';
   }
   function renderLegend() {
-    $('legend').innerHTML = Object.keys(CODES).map(function (c) { return '<div>' + codeHtml(c) + '<span>' + esc(CODES[c]) + '</span></div>'; }).join('') +
-      '<div><span class="code J ren">J<sup>K</sup></span><span>Renfort dans une autre unité (initiale de l’unité)</span></div><div><span class="rest">·</span><span>Repos</span></div>';
+    $('legend').innerHTML = Object.keys(CODES).filter(function (c) { return c !== 'B'; }).map(function (c) { return '<div>' + codeHtml(c) + '<span>' + esc(CODES[c]) + '</span></div>'; }).join('') +
+      '<div><span class="code J ren">J<sup>K</sup></span><span>Renfort dans une autre unité (initiale de l’unité)</span></div>';
   }
 
   /* ---------- équipe & règles ---------- */
@@ -939,7 +958,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
         sel('reposApresNuit', 'Repos après des nuits', s.reposApresNuit || '', [['', 'Règle générale'], ['3', '3 jours'], ['4', '4 jours']]) +
         sel('pasDeuxPostes', 'Postes d’affilée', s.pasDeuxPostes || '', [['', 'Sans restriction'], ['jour', 'Pas 2 jours (J) d’affilée'], ['horsWE', 'Pas 2 postes d’affilée hors week-end']]) +
         sel('maxWE', 'Week-ends par mois au plus', s.maxWE == null ? '' : s.maxWE, [['', 'Sans limite'], ['0', '0'], ['1', '1'], ['2', '2'], ['3', '3']]) +
-        txt('weRef', 'Alternance des week-ends : un samedi travaillable', s.weRef, 'AAAA-MM-JJ') + chk('weekendsTous', 'Préfère travailler tous les week-ends de jour', s.weekendsTous) + '</div>';
+        txt('weRef', 'Alternance des week-ends : un samedi travaillable', s.weRef, 'AAAA-MM-JJ') + chk('weekendsTous', 'Travaille un week-end sur deux (samedi et dimanche de jour)', s.weekendsTous) + (s.weekendsTous ? txt('weTravailRef', 'Un samedi de week-end travaillé (sinon : suite du mois précédent)', s.weTravailRef, 'AAAA-MM-JJ') : '') + '</div>';
       h += '<h4>Jours de la semaine</h4><div class="note">Jours travaillés (vide = tous) :</div><div class="days7">' + WEEK.map(function (w) { return '<button type="button" data-ja="' + w + '" aria-pressed="' + ((s.joursAutorises || []).indexOf(w) >= 0) + '">' + DOW2[w] + '</button>'; }).join('') + '</div>';
       h += '<div class="note">Pas de journée (J ou 7 h) ces jours-là :</div><div class="days7 excl">' + WEEK.map(function (w) { var x = (s.desirs || {})[w] || []; return '<button type="button" data-nj="' + w + '" aria-pressed="' + (x.indexOf('J') >= 0) + '">' + DOW2[w] + '</button>'; }).join('') + '</div>';
       h += '<div class="note">Pas de nuit ces jours-là :</div><div class="days7 excl">' + WEEK.map(function (w) { var x = (s.desirs || {})[w] || []; return '<button type="button" data-nn="' + w + '" aria-pressed="' + (x.indexOf('N') >= 0) + '">' + DOW2[w] + '</button>'; }).join('') + '</div>';
@@ -975,7 +994,7 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
     else if (t.dataset.f) {
       var f = t.dataset.f, val = t.type === 'checkbox' ? t.checked : t.value;
       if (['taux', 'soldeInitial', 'soldeVise', 'reposApresNuit', 'maxWE'].indexOf(f) >= 0) { val = num(val); if (isNaN(val)) { toast('Nombre attendu'); return; } }
-      if (f === 'weRef' && val && !/^\d{4}-\d{2}-\d{2}$/.test(val)) { toast('Format attendu : 2027-01-09'); return; }
+      if ((f === 'weRef' || f === 'weTravailRef') && val && !/^\d{4}-\d{2}-\d{2}$/.test(val)) { toast('Format attendu : 2027-01-09'); return; }
       if (val === null || val === '' || val === false) delete s[f]; else s[f] = typeof val === 'string' ? val.trim() : val;
     } else return;
     save(); render();
@@ -1004,13 +1023,13 @@ textarea.note-in { width: 100%; min-height: 54px; border: 1px solid var(--line);
 
   /* ---------- export ---------- */
   function exportCsv() {
-    var ev = P.evaluate(baseOpts({ carry: carries() })), info = ev.info, rows = [];
+    var ev = P.evaluate(baseOpts({ carry: carries() })), info = ev.info, rows = [], lab = repos();
     var head = ['Unité', 'Personne', 'Fonction', 'Taux'].concat(info.days.map(function (d) { return DOW2[d.dow] + ' ' + d.d; })).concat(['Heures', 'Théorique', 'Solde du mois', 'Nuits', 'Week-ends']);
     rows.push(head);
     staff().forEach(function (s) {
       var p = ev.people.filter(function (x) { return x.id === s.id; })[0]; if (!p) return;
       var src = state.plan.cells[s.id] || {};
-      rows.push([unitName(s.unite), dname(s), s.qualif, s.taux].concat(info.days.map(function (d) { var pc = P.parseCell(src[d.d]); return pc.c + (pc.u && pc.u !== s.unite ? '@' + pc.u : ''); }))
+      rows.push([unitName(s.unite), dname(s), s.qualif, s.taux].concat(info.days.map(function (d) { var pc = P.parseCell(src[d.d]); return pc.c ? pc.c + (pc.u && pc.u !== s.unite ? '@' + pc.u : '') : ((lab[s.id] || {})[d.d] || ''); }))
         .concat([p.hours, p.theo, p.balance, p.nights, p.we].map(function (x) { return String(x).replace('.', ','); })));
     });
     var text = rows.map(function (r) { return r.map(function (c) { c = String(c); return /[;"\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(';'); }).join('\n');

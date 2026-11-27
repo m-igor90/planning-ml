@@ -68,3 +68,36 @@ test('agent de nuit : jamais de poste de jour ; trame fixe non saisie générée
   assert.ok(codes.every(c => c === 'N' || c === 'RPV'), codes.join(','));
   assert.ok(P.evaluate({ ...base, plan: {}, staff: [{ ...night, trameFixe: false }], cells: { n: { 3: 'J' } } }).issues.some(i => /Agent de nuit/.test(i.txt)));
 });
+
+test('réponses de la responsable : nuit à 12 h pour les 48 h, plus de B, un week-end sur deux', () => {
+  // 4 nuits de 12h50 sur 7 jours = 51h20 mais 48 h effectives : pas d'alerte
+  const e = ev({ a: { 4: 'N', 5: 'N', 8: 'N', 9: 'N' } });
+  assert.ok(!errs(e, 'a').some(t => /sur 7 jours/.test(t)), errs(e, 'a').join(' | '));
+  assert.strictEqual(e.people.find(p => p.id === 'a').hours, 51.33, 'les heures du mois gardent 12h50');
+  // aucune journée B générée
+  const res = P.generate({ ...base, cells: plan.cells, carry, seed: 2 });
+  assert.ok(Object.values(res.cells).every(r => Object.values(r).every(v => P.parseCell(v).c !== 'B')));
+  // Sa : un week-end sur deux, samedi et dimanche de jour
+  const e2 = P.evaluate({ ...base, cells: res.cells, carry });
+  assert.deepStrictEqual(e2.issues.filter(i => i.sid === 'Sa' && /un sur deux|un week-end sur deux/.test(i.txt)), []);
+  const sats = [2, 9, 16, 23, 30].map(d => P.parseCell(res.cells.Sa[d]).c === 'J' && P.parseCell(res.cells.Sa[d + 1]).c === 'J');
+  assert.ok(sats.every((w, k) => k === 0 || w !== sats[k - 1]), 'alternance : ' + sats.join(','));
+});
+
+test('nature des repos : 2 RH par semaine dont le dimanche, Rtp des temps partiels, JF, RC', () => {
+  const staff = [{ id: 'p', qualif: 'PDE', unite: 'U', taux: 80 }, { id: 'v', qualif: 'IDE', unite: 'U', taux: 100, vacataire: true }];
+  // février 2027 : 4 semaines pleines du lundi 1er au dimanche 28, 20 jours ouvrés
+  const cells = { p: { 3: 'J', 4: 'J', 10: 'N', 11: 'N', 12: 'RPV', 17: 'J', 18: 'J', 24: 'J', 25: 'J', 28: 'J', 15: '!RC' } };
+  const L = P.reposLabels({ staff, year: 2027, month: 2, holidays: [], cells });
+  const n = c => Object.values(L.p).filter(x => x === c).length;
+  assert.strictEqual(n('RH'), 8);
+  assert.strictEqual(n('Rtp'), 4);
+  assert.ok(['7', '14', '21'].every(d => L.p[d] === 'RH'), 'dimanches libres en RH');
+  assert.strictEqual(L.p[28], undefined, 'jour travaillé non étiqueté');
+  assert.strictEqual(L.p[12], undefined, 'RPV gardé');
+  assert.strictEqual(L.p[15], undefined, 'code posé à la main gardé');
+  assert.deepStrictEqual(L.v, undefined, 'rien pour la vacataire');
+  const tot = Object.keys(L.p).length + Object.keys(cells.p).length;
+  assert.strictEqual(tot, 28);
+  assert.strictEqual(P.reposLabels({ staff, year: 2027, month: 5, holidays: [1, 8, 13, 24], cells: {} }).p[13], 'JF');
+});

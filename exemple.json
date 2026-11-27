@@ -73,7 +73,7 @@
     ],
     "nuits": "non",
     "weekendsTous": true,
-    "note": "Pas de nuit, tous les week-ends travaillés S-D de jour",
+    "note": "Pas de nuit ; travaille un week-end sur deux, samedi et dimanche de jour",
     "soldeInitial": -6.88,
     "soldeDebut": "2027-01"
    },
@@ -402,7 +402,7 @@
     "unite": "KAN",
     "taux": 100,
     "polyvalence": [],
-    "note": "Auxiliaire de puériculture ; polyvalence SAU",
+    "note": "Auxiliaire de puériculture ; en prêt au SAU jusqu’au 3 janvier, affectée à Kang à partir du 4",
     "soldeInitial": 44.08,
     "soldeDebut": "2027-01"
    }
@@ -548,7 +548,11 @@
      "22": "RsA",
      "28": "RsA"
     },
-    "Lo": {}
+    "Lo": {
+     "1": "Ext",
+     "2": "Ext",
+     "3": "Ext"
+    }
    },
    "theo": {
     "Mo": 120.0,
